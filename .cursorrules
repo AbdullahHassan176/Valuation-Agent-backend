@@ -1,0 +1,21 @@
+# Cursor Rules — BACKEND (Valuation Agent Workspace)
+
+GOAL
+- FastAPI service hosting the multi-agent orchestrator (LangGraph) that calls API.
+- Expose endpoints like /runs, /agents/parse_contract (later).
+- Today: only /healthz placeholder exists.
+
+RUNTIME
+- PORT=8000
+- API_BASE_URL=http://api:9000
+- DATABASE_URL=postgresql://valuation:valuation@db:5432/valuation
+
+HOW TO RUN (later)
+- uvicorn app:app --host 0.0.0.0 --port 8000
+
+DOCKER
+- Built by parent docker-compose. Replace placeholder with real app later.
+
+GUARDRAILS
+- Do not embed pricing math. Always call API for deterministic valuation.
+- Enforce schema validation and guardrails when implemented.
