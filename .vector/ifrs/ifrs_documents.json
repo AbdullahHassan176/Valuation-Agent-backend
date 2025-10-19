@@ -1,0 +1,261 @@
+{
+  "name": "ifrs_documents",
+  "metadata": {
+    "description": "IFRS documents and standards"
+  },
+  "documents": [
+    {
+      "id": "test-doc-123_0",
+      "content": "IFRS 13 Fair Value Measurement\n    \n    This standard establishes a framework for measuring fair value and sets out disclosure requirements for fair value measurements.\n    \n    The fair value measurement framework applies to:\n    - Financial instruments\n    - Non-financial assets\n    - Liabilities\n    \n    Key principles include:\n    - Market participant perspective\n    - Highest and best use\n    - Valuation techniques",
+      "metadata": {
+        "doc_id": "test-doc-123",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 423,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement",
+        "page_number": 1,
+        "source_metadata": {
+          "source": "txt",
+          "file_type": ".txt"
+        }
+      }
+    },
+    {
+      "id": "ifrs13-test_0",
+      "content": "\n    IFRS 13 Fair Value Measurement\n    \n    This standard establishes a framework for measuring fair value and sets out disclosure requirements for fair value measurements.\n    \n    The fair value measurement framework applies to:\n    - Financial instruments\n    - Non-financial assets  \n    - Liabilities\n    \n    Key principles include:\n    - Market participant perspective\n    - Highest and best use\n    - Valuation techniques\n    \n    Paragraph 4.1.1: Fair value is the price that would be received to sell an asset or paid to transfer a liability in an orderly transaction between market participants at the measurement date.\n    \n    Paragraph 4.1.2: A fair value measurement assumes that the transaction to sell the asset or transfer the liability takes place either:\n    (a) In the principal market for the asset or liability; or\n    (b) In the absence of a principal market, in the most advantageous market for the asset or liability.\n    ",
+      "metadata": {
+        "doc_id": "ifrs13-test",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 949,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "ifrs13-structured_0",
+      "content": "\n    IFRS 13 Fair Value Measurement\n    \n    Paragraph 4.1.1: Fair value is the price that would be received to sell an asset or paid to transfer a liability in an orderly transaction between market participants at the measurement date.\n    \n    Paragraph 4.1.2: A fair value measurement assumes that the transaction to sell the asset or transfer the liability takes place either:\n    (a) In the principal market for the asset or liability; or\n    (b) In the absence of a principal market, in the most advantageous market for the asset or liability.\n    \n    Paragraph 4.1.3: The price in the principal (or most advantageous) market used to measure the fair value of the asset or liability shall not be adjusted for transaction costs.\n    \n    Paragraph 4.1.4: A fair value measurement assumes that the asset or liability is exchanged in an orderly transaction between market participants to sell the asset or transfer the liability at the measurement date under current market conditions.\n    ",
+      "metadata": {
+        "doc_id": "ifrs13-structured",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 994,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement",
+        "paragraph": "4.1"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_0",
+      "content": "VALUATION MEMO - FAIR VALUE MEASUREMENT\n    \n    Executive Summary:\n    This memo outlines the fair value measurement approach for our financial instruments portfolio as of December 31, 2023.\n    \n    Fair Value Hierarchy:\n    The fair value hierarchy is classified as follows:\n    - Level 1: Quoted prices in active markets for identical assets (40% of portfolio)\n    - Level 2: Observable inputs other than quoted prices (50% of portfolio)  \n    - Level 3: Unobservable inputs (10% of portfolio)\n    \n    Principal Market Analysis:\n    The principal market for our financial instruments is the London Stock Exchange (LSE) for equity instruments and the interbank market for fixed income securities. We have confirmed access to these markets at the measurement date.\n    \n    Day-1 P&L Calculation:\n    Day-1 P&L for new transactions amounted to $2.5M, primarily due to bid-ask spreads and transaction costs. This represents 0.8% of the total portfolio value and is within acceptable limits.",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 992,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_1",
+      "content": "d to $2.5M, primarily due to bid-ask spreads and transaction costs. This represents 0.8% of the total portfolio value and is within acceptable limits.\n    \n    Non-Performance Risk Assessment:\n    Credit risk adjustments have been applied to all financial instruments based on counterparty credit ratings. The average credit risk adjustment is 15 basis points, reflecting the credit quality of our counterparties.\n    \n    Valuation Techniques:\n    We employ the following valuation techniques:\n    - Market approach for Level 1 and Level 2 instruments\n    - Income approach for Level 3 instruments using discounted cash flow models\n    - Cost approach for certain derivative instruments\n    \n    Observable Inputs:\n    We prioritize observable inputs to the maximum extent possible. For Level 2 instruments, we use observable market data such as yield curves, credit spreads, and volatility surfaces.\n    \n    Disclosure Requirements:\n    Fair values are disclosed in Note 15 of our financial statem",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 1,
+        "chunk_size": 1000,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_2",
+      "content": "ld curves, credit spreads, and volatility surfaces.\n    \n    Disclosure Requirements:\n    Fair values are disclosed in Note 15 of our financial statements. The fair value hierarchy is presented in a table format showing the classification of each major category of financial instruments.\n    \n    Market Participant Assumptions:\n    All fair value measurements reflect the perspective of market participants, assuming orderly transactions between willing parties. We do not consider our own specific circumstances in the valuation process.",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 2,
+        "chunk_size": 539,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "incomplete-memo_0",
+      "content": "\n    VALUATION MEMO - INCOMPLETE\n    \n    This is an incomplete valuation memo that lacks several key IFRS 13 requirements.\n    \n    Fair Value:\n    We have some financial instruments that need to be valued.\n    \n    Market:\n    We use market prices when available.\n    ",
+      "metadata": {
+        "doc_id": "incomplete-memo",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 270,
+        "standard": "IFRS 13",
+        "section": "Incomplete Analysis"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_0",
+      "content": "VALUATION MEMO - FAIR VALUE MEASUREMENT\n    \n    Executive Summary:\n    This memo outlines the fair value measurement approach for our financial instruments portfolio as of December 31, 2023.\n    \n    Fair Value Hierarchy:\n    The fair value hierarchy is classified as follows:\n    - Level 1: Quoted prices in active markets for identical assets (40% of portfolio)\n    - Level 2: Observable inputs other than quoted prices (50% of portfolio)  \n    - Level 3: Unobservable inputs (10% of portfolio)\n    \n    Principal Market Analysis:\n    The principal market for our financial instruments is the London Stock Exchange (LSE) for equity instruments and the interbank market for fixed income securities. We have confirmed access to these markets at the measurement date.\n    \n    Day-1 P&L Calculation:\n    Day-1 P&L for new transactions amounted to $2.5M, primarily due to bid-ask spreads and transaction costs. This represents 0.8% of the total portfolio value and is within acceptable limits.",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 992,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_1",
+      "content": "d to $2.5M, primarily due to bid-ask spreads and transaction costs. This represents 0.8% of the total portfolio value and is within acceptable limits.\n    \n    Non-Performance Risk Assessment:\n    Credit risk adjustments have been applied to all financial instruments based on counterparty credit ratings. The average credit risk adjustment is 15 basis points, reflecting the credit quality of our counterparties.\n    \n    Valuation Techniques:\n    We employ the following valuation techniques:\n    - Market approach for Level 1 and Level 2 instruments\n    - Income approach for Level 3 instruments using discounted cash flow models\n    - Cost approach for certain derivative instruments\n    \n    Observable Inputs:\n    We prioritize observable inputs to the maximum extent possible. For Level 2 instruments, we use observable market data such as yield curves, credit spreads, and volatility surfaces.\n    \n    Disclosure Requirements:\n    Fair values are disclosed in Note 15 of our financial statem",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 1,
+        "chunk_size": 1000,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_2",
+      "content": "ld curves, credit spreads, and volatility surfaces.\n    \n    Disclosure Requirements:\n    Fair values are disclosed in Note 15 of our financial statements. The fair value hierarchy is presented in a table format showing the classification of each major category of financial instruments.\n    \n    Market Participant Assumptions:\n    All fair value measurements reflect the perspective of market participants, assuming orderly transactions between willing parties. We do not consider our own specific circumstances in the valuation process.",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 2,
+        "chunk_size": 539,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "incomplete-memo_0",
+      "content": "\n    VALUATION MEMO - INCOMPLETE\n    \n    This is an incomplete valuation memo that lacks several key IFRS 13 requirements.\n    \n    Fair Value:\n    We have some financial instruments that need to be valued.\n    \n    Market:\n    We use market prices when available.\n    ",
+      "metadata": {
+        "doc_id": "incomplete-memo",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 270,
+        "standard": "IFRS 13",
+        "section": "Incomplete Analysis"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_0",
+      "content": "VALUATION MEMO - FAIR VALUE MEASUREMENT\n    \n    Executive Summary:\n    This memo outlines the fair value measurement approach for our financial instruments portfolio as of December 31, 2023.\n    \n    Fair Value Hierarchy:\n    The fair value hierarchy is classified as follows:\n    - Level 1: Quoted prices in active markets for identical assets (40% of portfolio)\n    - Level 2: Observable inputs other than quoted prices (50% of portfolio)  \n    - Level 3: Unobservable inputs (10% of portfolio)\n    \n    Principal Market Analysis:\n    The principal market for our financial instruments is the London Stock Exchange (LSE) for equity instruments and the interbank market for fixed income securities. We have confirmed access to these markets at the measurement date.\n    \n    Day-1 P&L Calculation:\n    Day-1 P&L for new transactions amounted to $2.5M, primarily due to bid-ask spreads and transaction costs. This represents 0.8% of the total portfolio value and is within acceptable limits.",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 992,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_1",
+      "content": "d to $2.5M, primarily due to bid-ask spreads and transaction costs. This represents 0.8% of the total portfolio value and is within acceptable limits.\n    \n    Non-Performance Risk Assessment:\n    Credit risk adjustments have been applied to all financial instruments based on counterparty credit ratings. The average credit risk adjustment is 15 basis points, reflecting the credit quality of our counterparties.\n    \n    Valuation Techniques:\n    We employ the following valuation techniques:\n    - Market approach for Level 1 and Level 2 instruments\n    - Income approach for Level 3 instruments using discounted cash flow models\n    - Cost approach for certain derivative instruments\n    \n    Observable Inputs:\n    We prioritize observable inputs to the maximum extent possible. For Level 2 instruments, we use observable market data such as yield curves, credit spreads, and volatility surfaces.\n    \n    Disclosure Requirements:\n    Fair values are disclosed in Note 15 of our financial statem",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 1,
+        "chunk_size": 1000,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_2",
+      "content": "ld curves, credit spreads, and volatility surfaces.\n    \n    Disclosure Requirements:\n    Fair values are disclosed in Note 15 of our financial statements. The fair value hierarchy is presented in a table format showing the classification of each major category of financial instruments.\n    \n    Market Participant Assumptions:\n    All fair value measurements reflect the perspective of market participants, assuming orderly transactions between willing parties. We do not consider our own specific circumstances in the valuation process.",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 2,
+        "chunk_size": 539,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "incomplete-memo_0",
+      "content": "\n    VALUATION MEMO - INCOMPLETE\n    \n    This is an incomplete valuation memo that lacks several key IFRS 13 requirements.\n    \n    Fair Value:\n    We have some financial instruments that need to be valued.\n    \n    Market:\n    We use market prices when available.\n    ",
+      "metadata": {
+        "doc_id": "incomplete-memo",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 270,
+        "standard": "IFRS 13",
+        "section": "Incomplete Analysis"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_0",
+      "content": "VALUATION MEMO - FAIR VALUE MEASUREMENT\n    \n    Executive Summary:\n    This memo outlines the fair value measurement approach for our financial instruments portfolio as of December 31, 2023.\n    \n    Fair Value Hierarchy:\n    The fair value hierarchy is classified as follows:\n    - Level 1: Quoted prices in active markets for identical assets (40% of portfolio)\n    - Level 2: Observable inputs other than quoted prices (50% of portfolio)  \n    - Level 3: Unobservable inputs (10% of portfolio)\n    \n    Principal Market Analysis:\n    The principal market for our financial instruments is the London Stock Exchange (LSE) for equity instruments and the interbank market for fixed income securities. We have confirmed access to these markets at the measurement date.\n    \n    Day-1 P&L Calculation:\n    Day-1 P&L for new transactions amounted to $2.5M, primarily due to bid-ask spreads and transaction costs. This represents 0.8% of the total portfolio value and is within acceptable limits.",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 992,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_1",
+      "content": "d to $2.5M, primarily due to bid-ask spreads and transaction costs. This represents 0.8% of the total portfolio value and is within acceptable limits.\n    \n    Non-Performance Risk Assessment:\n    Credit risk adjustments have been applied to all financial instruments based on counterparty credit ratings. The average credit risk adjustment is 15 basis points, reflecting the credit quality of our counterparties.\n    \n    Valuation Techniques:\n    We employ the following valuation techniques:\n    - Market approach for Level 1 and Level 2 instruments\n    - Income approach for Level 3 instruments using discounted cash flow models\n    - Cost approach for certain derivative instruments\n    \n    Observable Inputs:\n    We prioritize observable inputs to the maximum extent possible. For Level 2 instruments, we use observable market data such as yield curves, credit spreads, and volatility surfaces.\n    \n    Disclosure Requirements:\n    Fair values are disclosed in Note 15 of our financial statem",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 1,
+        "chunk_size": 1000,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "valuation-memo-2023_2",
+      "content": "ld curves, credit spreads, and volatility surfaces.\n    \n    Disclosure Requirements:\n    Fair values are disclosed in Note 15 of our financial statements. The fair value hierarchy is presented in a table format showing the classification of each major category of financial instruments.\n    \n    Market Participant Assumptions:\n    All fair value measurements reflect the perspective of market participants, assuming orderly transactions between willing parties. We do not consider our own specific circumstances in the valuation process.",
+      "metadata": {
+        "doc_id": "valuation-memo-2023",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 2,
+        "chunk_size": 539,
+        "standard": "IFRS 13",
+        "section": "Fair Value Measurement"
+      }
+    },
+    {
+      "id": "incomplete-memo_0",
+      "content": "\n    VALUATION MEMO - INCOMPLETE\n    \n    This is an incomplete valuation memo that lacks several key IFRS 13 requirements.\n    \n    Fair Value:\n    We have some financial instruments that need to be valued.\n    \n    Market:\n    We use market prices when available.\n    ",
+      "metadata": {
+        "doc_id": "incomplete-memo",
+        "page_from": 1,
+        "page_to": 1,
+        "chunk_index": 0,
+        "chunk_size": 270,
+        "standard": "IFRS 13",
+        "section": "Incomplete Analysis"
+      }
+    }
+  ]
+}

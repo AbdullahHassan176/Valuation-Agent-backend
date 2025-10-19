@@ -19,3 +19,4 @@ DOCKER
 GUARDRAILS
 - Do not embed pricing math. Always call API for deterministic valuation.
 - Enforce schema validation and guardrails when implemented.
+

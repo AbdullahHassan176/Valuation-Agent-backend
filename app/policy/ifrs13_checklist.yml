@@ -1,0 +1,191 @@
+# IFRS 13 Fair Value Measurement Checklist
+# Structured checklist for analyzing documents against IFRS 13 requirements
+
+checklist:
+  name: "IFRS 13 Fair Value Measurement Compliance"
+  description: "Comprehensive checklist for IFRS 13 fair value measurement requirements"
+  version: "1.0"
+  
+  items:
+    # Hierarchy and Classification
+    - id: "hierarchy_defined"
+      key: "hierarchy_defined"
+      description: "Fair value hierarchy level is clearly defined (Level 1, 2, or 3)"
+      critical: true
+      category: "hierarchy"
+      
+    - id: "hierarchy_justification"
+      key: "hierarchy_justification"
+      description: "Justification provided for hierarchy level classification"
+      critical: true
+      category: "hierarchy"
+      
+    # Principal Market
+    - id: "principal_market_identified"
+      key: "principal_market_identified"
+      description: "Principal market for the asset or liability is identified"
+      critical: true
+      category: "market"
+      
+    - id: "principal_market_accessible"
+      key: "principal_market_accessible"
+      description: "Entity has access to the principal market at measurement date"
+      critical: true
+      category: "market"
+      
+    - id: "most_advantageous_market"
+      key: "most_advantageous_market"
+      description: "Most advantageous market considered when principal market not available"
+      critical: false
+      category: "market"
+      
+    # Day-1 P&L
+    - id: "day1_pnl_calculated"
+      key: "day1_pnl_calculated"
+      description: "Day-1 P&L is calculated and disclosed"
+      critical: true
+      category: "day1_pnl"
+      
+    - id: "day1_pnl_explanation"
+      key: "day1_pnl_explanation"
+      description: "Explanation provided for significant Day-1 P&L"
+      critical: false
+      category: "day1_pnl"
+      
+    # Non-Performance Risk
+    - id: "non_performance_risk_assessed"
+      key: "non_performance_risk_assessed"
+      description: "Non-performance risk is assessed and incorporated"
+      critical: true
+      category: "risk"
+      
+    - id: "credit_risk_adjustment"
+      key: "credit_risk_adjustment"
+      description: "Credit risk adjustment is properly calculated"
+      critical: true
+      category: "risk"
+      
+    # Observability
+    - id: "observable_inputs_used"
+      key: "observable_inputs_used"
+      description: "Observable inputs are used to maximum extent possible"
+      critical: true
+      category: "observability"
+      
+    - id: "unobservable_inputs_justified"
+      key: "unobservable_inputs_justified"
+      description: "Use of unobservable inputs is properly justified"
+      critical: false
+      category: "observability"
+      
+    # Valuation Techniques
+    - id: "valuation_technique_appropriate"
+      key: "valuation_technique_appropriate"
+      description: "Valuation technique is appropriate for the asset/liability"
+      critical: true
+      category: "valuation"
+      
+    - id: "valuation_technique_consistent"
+      key: "valuation_technique_consistent"
+      description: "Valuation technique is used consistently"
+      critical: false
+      category: "valuation"
+      
+    - id: "valuation_inputs_reasonable"
+      key: "valuation_inputs_reasonable"
+      description: "Valuation inputs are reasonable and supportable"
+      critical: true
+      category: "valuation"
+      
+    # Disclosure Requirements
+    - id: "fair_value_disclosed"
+      key: "fair_value_disclosed"
+      description: "Fair value is disclosed in financial statements"
+      critical: true
+      category: "disclosure"
+      
+    - id: "hierarchy_level_disclosed"
+      key: "hierarchy_level_disclosed"
+      description: "Fair value hierarchy level is disclosed"
+      critical: true
+      category: "disclosure"
+      
+    - id: "valuation_technique_disclosed"
+      key: "valuation_technique_disclosed"
+      description: "Valuation technique is disclosed"
+      critical: false
+      category: "disclosure"
+      
+    - id: "sensitivity_analysis"
+      key: "sensitivity_analysis"
+      description: "Sensitivity analysis is provided for Level 3 measurements"
+      critical: false
+      category: "disclosure"
+      
+    # Market Participant Assumptions
+    - id: "market_participant_perspective"
+      key: "market_participant_perspective"
+      description: "Fair value reflects market participant perspective"
+      critical: true
+      category: "assumptions"
+      
+    - id: "highest_best_use"
+      key: "highest_best_use"
+      description: "Highest and best use is considered for non-financial assets"
+      critical: false
+      category: "assumptions"
+      
+    - id: "orderly_transaction"
+      key: "orderly_transaction"
+      description: "Fair value assumes orderly transaction between market participants"
+      critical: true
+      category: "assumptions"
+
+  categories:
+    hierarchy:
+      name: "Fair Value Hierarchy"
+      description: "Classification and justification of fair value hierarchy level"
+      
+    market:
+      name: "Market Identification"
+      description: "Identification of principal and most advantageous markets"
+      
+    day1_pnl:
+      name: "Day-1 P&L"
+      description: "Calculation and disclosure of Day-1 profit or loss"
+      
+    risk:
+      name: "Non-Performance Risk"
+      description: "Assessment and incorporation of non-performance risk"
+      
+    observability:
+      name: "Input Observability"
+      description: "Use of observable vs unobservable inputs"
+      
+    valuation:
+      name: "Valuation Techniques"
+      description: "Appropriate valuation techniques and inputs"
+      
+    disclosure:
+      name: "Disclosure Requirements"
+      description: "Required disclosures in financial statements"
+      
+    assumptions:
+      name: "Market Participant Assumptions"
+      description: "Market participant perspective and assumptions"
+
+  critical_items:
+    - "hierarchy_defined"
+    - "hierarchy_justification"
+    - "principal_market_identified"
+    - "principal_market_accessible"
+    - "day1_pnl_calculated"
+    - "non_performance_risk_assessed"
+    - "credit_risk_adjustment"
+    - "observable_inputs_used"
+    - "valuation_technique_appropriate"
+    - "valuation_inputs_reasonable"
+    - "fair_value_disclosed"
+    - "hierarchy_level_disclosed"
+    - "market_participant_perspective"
+    - "orderly_transaction"

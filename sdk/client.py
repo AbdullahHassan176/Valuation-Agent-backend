@@ -2,3 +2,4 @@
 class Client:
     """Generated API client for Valuation Agent API"""
     pass
+

@@ -1,0 +1,38 @@
+INTEREST RATE SWAP AGREEMENT
+
+This Interest Rate Swap Agreement (the "Agreement") is entered into on January 15, 2024, between:
+
+Counterparty A: ABC Bank
+Counterparty B: XYZ Corporation
+
+TERMS AND CONDITIONS:
+
+1. NOTIONAL AMOUNT: USD 10,000,000 (Ten Million US Dollars)
+
+2. CURRENCY: USD (United States Dollar)
+
+3. FIXED RATE: 5.25% per annum
+
+4. FLOATING RATE INDEX: SOFR (Secured Overnight Financing Rate)
+
+5. EFFECTIVE DATE: March 1, 2024
+
+6. MATURITY DATE: March 1, 2025
+
+7. PAYMENT FREQUENCY: Quarterly
+
+8. DAY COUNT CONVENTION: ACT/360
+
+9. BUSINESS DAY CONVENTION: Following
+
+10. CALENDAR: USD Calendar
+
+This swap agreement represents a standard interest rate swap where Counterparty A will pay a fixed rate of 5.25% and receive SOFR floating rate payments on a notional amount of USD 10,000,000.
+
+The swap will commence on March 1, 2024 and terminate on March 1, 2025, with quarterly payment dates.
+
+All payments will be calculated using the ACT/360 day count convention and the Following business day convention will apply to all payment dates.
+
+This agreement is subject to standard ISDA terms and conditions.
+
+

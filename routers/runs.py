@@ -4,14 +4,14 @@ from fastapi.responses import StreamingResponse
 import httpx
 import json
 import asyncio
-from ..settings import get_settings
-from ..sdk.models import RunRequest, RunStatus, PVBreakdown
+from settings import get_settings
+from sdk.models import RunRequest, RunStatus, PVBreakdown
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 settings = get_settings()
 
-@router.post("/", response_model=RunStatus, status_code=status.HTTP_201_CREATED)
-async def create_run(request: RunRequest) -> RunStatus:
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_run(request):
     """Create a new valuation run by proxying to API"""
     async with httpx.AsyncClient() as client:
         try:

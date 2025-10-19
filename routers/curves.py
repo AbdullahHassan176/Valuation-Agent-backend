@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Request
 import httpx
 from typing import Optional
-from ..settings import get_settings
+from settings import get_settings
 
 router = APIRouter(
     prefix="/curves",

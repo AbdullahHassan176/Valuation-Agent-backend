@@ -1,11 +1,11 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 from typing import Optional
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
     # API Configuration
-    api_base_url: str = "http://api:9000"
+    api_base_url: str = "http://127.0.0.1:9000"
     
     # Server Configuration
     port: int = 8000

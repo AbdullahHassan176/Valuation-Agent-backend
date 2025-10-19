@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
-from .routers import runs, curves
-from .settings import get_settings
+from routers import runs, curves, exports, sensitivities, agents, explanations, chat
+from settings import get_settings
 
 # Import generated SDK (placeholder for now)
 try:
@@ -19,6 +19,11 @@ app = FastAPI(
 # Include routers
 app.include_router(runs.router)
 app.include_router(curves.router)
+app.include_router(exports.router)
+app.include_router(sensitivities.router)
+app.include_router(agents.router)
+app.include_router(explanations.router)
+app.include_router(chat.router)
 
 @app.get("/healthz")
 def health_check():

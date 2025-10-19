@@ -1,0 +1,136 @@
+{
+  "documents": {
+    "irs_methodology_1": {
+      "content": "Interest Rate Swap (IRS) valuation follows the discounted cash flow (DCF) methodology. The present value is calculated by discounting all future cash flows using the appropriate discount curve. For fixed legs, cash flows are determined by the fixed rate and day count convention. For floating legs, cash flows are projected using forward rates from the yield curve.",
+      "metadata": {
+        "content_type": "methodology",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "IRS_Valuation_Methodology",
+      "section_id": "section_1",
+      "paragraph_id": "para_1_1"
+    },
+    "irs_methodology_2": {
+      "content": "Day count conventions are critical for accurate accrual calculations. ACT/360 is the standard for USD swaps, while ACT/365 is used for EUR swaps. The Modified Following business day convention is applied to adjust payment dates that fall on weekends or holidays.",
+      "metadata": {
+        "content_type": "methodology",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "IRS_Valuation_Methodology",
+      "section_id": "section_1",
+      "paragraph_id": "para_1_2"
+    },
+    "xva_methodology_1": {
+      "content": "Credit Value Adjustment (CVA) represents the cost of counterparty credit risk. It is calculated as the expected loss from counterparty default, discounted to present value. CVA = (1 - Recovery Rate) \u00d7 \u03a3[Expected Exposure(t) \u00d7 Probability of Default(t) \u00d7 Discount Factor(t)].",
+      "metadata": {
+        "content_type": "methodology",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "XVA_Methodology",
+      "section_id": "section_2",
+      "paragraph_id": "para_2_1"
+    },
+    "xva_methodology_2": {
+      "content": "Debit Value Adjustment (DVA) represents the benefit from our own credit risk. It is calculated similarly to CVA but using our own credit curve and negative exposures. DVA = (1 - Recovery Rate) \u00d7 \u03a3[Expected Negative Exposure(t) \u00d7 Our Probability of Default(t) \u00d7 Discount Factor(t)].",
+      "metadata": {
+        "content_type": "methodology",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "XVA_Methodology",
+      "section_id": "section_2",
+      "paragraph_id": "para_2_2"
+    },
+    "xva_methodology_3": {
+      "content": "Funding Value Adjustment (FVA) represents the cost of funding risk. It is calculated as the expected funding cost over the life of the trade. FVA = \u03a3[Expected Exposure(t) \u00d7 Funding Spread(t) \u00d7 Discount Factor(t)]. CSA agreements can reduce FVA by providing collateral benefits.",
+      "metadata": {
+        "content_type": "methodology",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "XVA_Methodology",
+      "section_id": "section_2",
+      "paragraph_id": "para_2_3"
+    },
+    "risk_policy_1": {
+      "content": "Sensitivity analysis is required for all valuation runs. Parallel curve bumps of \u00b11bp must be calculated to assess interest rate risk. The results should show reasonable symmetry and sign consistency. PV01 (Present Value of 1 basis point) should be calculated and validated against market expectations.",
+      "metadata": {
+        "content_type": "policy",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "Risk_Management_Policy",
+      "section_id": "section_3",
+      "paragraph_id": "para_3_1"
+    },
+    "risk_policy_2": {
+      "content": "Curve twist analysis is required for trades with maturities greater than 5 years. Short-end and long-end bumps should be applied separately to assess curve risk. Typical twist scenarios include steepening (+1bp long, -1bp short) and flattening (-1bp long, +1bp short).",
+      "metadata": {
+        "content_type": "policy",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "Risk_Management_Policy",
+      "section_id": "section_3",
+      "paragraph_id": "para_3_2"
+    },
+    "ifrs13_policy_1": {
+      "content": "IFRS-13 requires fair value hierarchy classification. Level 1 inputs are quoted prices in active markets. Level 2 inputs are observable market data other than quoted prices. Level 3 inputs are unobservable inputs requiring significant judgment. All valuation runs must be classified according to this hierarchy.",
+      "metadata": {
+        "content_type": "policy",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "IFRS13_Compliance_Policy",
+      "section_id": "section_4",
+      "paragraph_id": "para_4_1"
+    },
+    "ifrs13_policy_2": {
+      "content": "Day-1 P&L checks are required for all new trades. The initial profit or loss must be within acceptable tolerance of market quotes. If the Day-1 P&L exceeds tolerance, the trade must be flagged for review and require additional justification. This ensures proper fair value measurement at inception.",
+      "metadata": {
+        "content_type": "policy",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "IFRS13_Compliance_Policy",
+      "section_id": "section_4",
+      "paragraph_id": "para_4_2"
+    },
+    "excel_policy_1": {
+      "content": "All valuation results must be exported to Excel with the following mandatory sheets: Cover, Instrument_Summary, Data_Sources, Curves, Cashflows, Results, Sensitivities, IFRS13_Assessment, Assumptions_Judgements, and Audit_Log. Each sheet must contain relevant data with proper lineage tracking.",
+      "metadata": {
+        "content_type": "policy",
+        "source": "internal_policy",
+        "version": "1.0"
+      },
+      "doc_name": "Excel_Export_Policy",
+      "section_id": "section_5",
+      "paragraph_id": "para_5_1"
+    }
+  },
+  "documents_by_name": {
+    "IRS_Valuation_Methodology": [
+      "irs_methodology_1",
+      "irs_methodology_2"
+    ],
+    "XVA_Methodology": [
+      "xva_methodology_1",
+      "xva_methodology_2",
+      "xva_methodology_3"
+    ],
+    "Risk_Management_Policy": [
+      "risk_policy_1",
+      "risk_policy_2"
+    ],
+    "IFRS13_Compliance_Policy": [
+      "ifrs13_policy_1",
+      "ifrs13_policy_2"
+    ],
+    "Excel_Export_Policy": [
+      "excel_policy_1"
+    ]
+  }
+}

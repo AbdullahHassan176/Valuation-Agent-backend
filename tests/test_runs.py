@@ -13,7 +13,7 @@ client = TestClient(app)
 # Sample test data
 sample_irs_spec = IRSSpec(
     notional=1000000.0,
-    ccy="USD",
+    currency="USD",
     payFixed=True,
     fixedRate=0.05,
     floatIndex="USD-LIBOR-3M",
@@ -44,13 +44,12 @@ sample_run_status = RunStatus(
 )
 
 sample_pv_breakdown = PVBreakdown(
-    run_id="test-run-123",
     total_pv=0.0,
     components={"fixed_leg": 0.0, "floating_leg": 0.0, "net_pv": 0.0},
-    market_data_hash="dummy_hash",
+    currency="USD",
+    data_hash="dummy_hash",
     model_hash="dummy_model_hash",
-    calculated_at=datetime(2024, 1, 1, 12, 0, 0),
-    metadata={"approach": "dummy_approach"}
+    calculation_time=1.5
 )
 
 class TestRunsRouter:
@@ -170,3 +169,4 @@ class TestRunsRouter:
         
         assert response.status_code == 422  # Validation error
         assert "validation error" in response.json()["detail"][0]["type"]
+

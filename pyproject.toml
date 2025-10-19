@@ -1,24 +1,48 @@
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "valuation-agent-backend"
+[tool.poetry]
+name = "valuation-backend"
 version = "0.1.0"
-description = "Backend orchestrator (FastAPI+LangGraph) for Valuation Agent Workspace"
-dependencies = [
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
-    "pydantic>=2.0.0",
-    "httpx>=0.25.0",
-]
+description = "Valuation Agent Backend API"
+authors = ["Valuation Agent Team <team@valuation-agent.com>"]
+readme = "README.md"
+packages = [{include = "app"}]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.0.0",
-    "httpx>=0.25.0",
-    "respx>=0.20.0",
-    "pydantic[email]>=2.0.0",
-]
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.104.1"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+httpx = "^0.25.2"
+python-multipart = "^0.0.6"
+pyyaml = "^6.0.1"
+python-dotenv = "^1.0.0"
+sqlmodel = "^0.0.14"
+# chromadb = "^0.4.18"
+# langchain = "^0.0.350"
+# langchain-openai = "^0.0.5"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-asyncio = "^0.21.1"
+black = "^23.11.0"
+isort = "^5.12.0"
+flake8 = "^6.1.0"
+mypy = "^1.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

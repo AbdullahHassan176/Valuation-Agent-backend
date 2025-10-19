@@ -1,0 +1,148 @@
+# IFRS Policy Configuration
+# Defines guardrails and policy firewall for IFRS question-answering
+
+# Citation Requirements
+citation_policy:
+  require_citations: true
+  min_citations: 1
+  max_citations: 10
+  citation_format:
+    required_fields: ["standard", "paragraph"]
+    optional_fields: ["section"]
+
+# Confidence Thresholds
+confidence_policy:
+  min_confidence: 0.65
+  high_confidence_threshold: 0.85
+  abstain_threshold: 0.5
+
+# Language Restrictions
+language_policy:
+  # Disallowed overconfident language
+  disallow_language:
+    - "guarantee"
+    - "certainly" 
+    - "always"
+    - "definitely"
+    - "without doubt"
+    - "100% certain"
+    - "absolutely"
+    - "never"
+    - "impossible"
+    - "must be"
+    - "will always"
+    - "guaranteed"
+    - "certain"
+    - "definitive"
+    - "conclusive"
+  
+  # Disallowed legal/advice language
+  restricted_advice:
+    - "tax structuring"
+    - "legal representation"
+    - "legal advice"
+    - "tax advice"
+    - "investment advice"
+    - "financial planning"
+    - "recommendation"
+    - "should invest"
+    - "should buy"
+    - "should sell"
+    - "tax optimization"
+    - "tax avoidance"
+    - "legal strategy"
+
+# Content Restrictions
+content_policy:
+  # Prohibited content types
+  prohibited_content:
+    - "personal financial advice"
+    - "investment recommendations"
+    - "legal opinions"
+    - "tax planning"
+    - "regulatory compliance advice"
+  
+  # Required disclaimers
+  required_disclaimers:
+    - "This is general information only"
+    - "Consult qualified professionals"
+    - "Not financial or legal advice"
+
+# IFRS-Specific Policies
+ifrs_policy:
+  # Standards coverage
+  supported_standards:
+    - "IFRS 9"
+    - "IFRS 13" 
+    - "IFRS 16"
+  
+  # Standard-specific restrictions
+  ifrs_9_restrictions:
+    - "investment advice"
+    - "portfolio recommendations"
+    - "risk management advice"
+  
+  ifrs_13_restrictions:
+    - "valuation advice"
+    - "pricing recommendations"
+    - "market analysis"
+  
+  ifrs_16_restrictions:
+    - "lease structuring"
+    - "contract advice"
+    - "negotiation guidance"
+
+# Response Format Requirements
+response_policy:
+  # Required response structure
+  required_fields:
+    - "status"
+    - "answer"
+    - "citations"
+    - "confidence"
+  
+  # Status validation
+  valid_statuses: ["OK", "ABSTAIN"]
+  
+  # Answer length limits
+  min_answer_length: 10
+  max_answer_length: 2000
+  
+  # Citation requirements
+  citation_requirements:
+    min_paragraph_references: 1
+    require_standard_specification: true
+    require_paragraph_numbering: true
+
+# Safety and Compliance
+safety_policy:
+  # Content safety checks
+  content_safety:
+    check_for_harmful_content: true
+    check_for_bias: true
+    check_for_misinformation: true
+  
+  # Compliance requirements
+  compliance:
+    require_ifrs_compliance: true
+    require_standard_citations: true
+    require_paragraph_references: true
+  
+  # Error handling
+  error_handling:
+    on_policy_violation: "ABSTAIN"
+    on_confidence_failure: "ABSTAIN"
+    on_citation_failure: "ABSTAIN"
+    on_language_violation: "ABSTAIN"
+
+# Monitoring and Logging
+monitoring_policy:
+  # Log policy violations
+  log_violations: true
+  log_confidence_scores: true
+  log_citation_quality: true
+  
+  # Alert thresholds
+  alert_on_low_confidence: 0.3
+  alert_on_no_citations: true
+  alert_on_language_violations: true
