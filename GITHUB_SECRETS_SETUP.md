@@ -10,7 +10,7 @@ You need to add these secrets to your GitHub repository:
 - **`AZURE_WEBAPP_PUBLISH_PROFILE`**: Publish profile content (see below)
 
 ### 2. Database Secret
-- **`DATABASE_URL`**: PostgreSQL connection string
+- **`DATABASE_URL`**: MongoDB connection string
 
 ### 3. API Keys
 - **`OPENAI_API_KEY`**: Your OpenAI API key

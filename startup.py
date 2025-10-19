@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Import and run the FastAPI app
 if __name__ == "__main__":
     import uvicorn
-    from app.main import app
+    from app.main_azure_simple import app
     from app.database import create_tables
     
     # Initialize database collections
