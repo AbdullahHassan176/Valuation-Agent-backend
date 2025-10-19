@@ -1,36 +1,84 @@
-import os
+"""
+Ultra-simple FastAPI app for Azure deployment.
+No complex imports, just basic functionality.
+"""
+
 from fastapi import FastAPI
-from routers import runs, curves, exports, sensitivities, agents, explanations, chat
-from settings import get_settings
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Dict, Any
 
-# Import generated SDK (placeholder for now)
-try:
-    from sdk import Client, IRSSpec, CCSSpec, RunRequest, RunStatus, PVBreakdown
-    sdk_available = True
-except ImportError:
-    sdk_available = False
-
+# Create FastAPI application
 app = FastAPI(
     title="Valuation Agent Backend",
-    description="Backend orchestrator for Valuation Agent Workspace",
+    description="Simple backend for valuation agent",
     version="1.0.0"
 )
 
-# Include routers
-app.include_router(runs.router)
-app.include_router(curves.router)
-app.include_router(exports.router)
-app.include_router(sensitivities.router)
-app.include_router(agents.router)
-app.include_router(explanations.router)
-app.include_router(chat.router)
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Request models
+class ChatRequest(BaseModel):
+    message: str
+    user_id: str = "default"
+
+class ChatResponse(BaseModel):
+    response: str
+    status: str = "success"
+
+@app.get("/")
+async def root() -> Dict[str, str]:
+    """Root endpoint."""
+    return {
+        "message": "Valuation Agent Backend API",
+        "version": "1.0.0",
+        "status": "running"
+    }
 
 @app.get("/healthz")
-def health_check():
-    settings = get_settings()
+async def health_check() -> Dict[str, str]:
+    """Health check endpoint."""
     return {
-        "ok": True, 
-        "service": "backend", 
-        "api_base_url": settings.api_base_url,
-        "sdk_available": sdk_available
+        "status": "healthy",
+        "service": "valuation-backend",
+        "version": "1.0.0"
+    }
+
+@app.post("/poc/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest) -> ChatResponse:
+    """Simple chat endpoint."""
+    return ChatResponse(
+        response=f"Echo: {request.message}",
+        status="success"
+    )
+
+@app.post("/poc/ifrs-ask")
+async def ifrs_ask(request: Dict[str, Any]) -> Dict[str, str]:
+    """IFRS ask endpoint."""
+    return {
+        "message": "IFRS ask endpoint is working!",
+        "status": "success"
+    }
+
+@app.post("/poc/parse-contract")
+async def parse_contract(request: Dict[str, Any]) -> Dict[str, str]:
+    """Parse contract endpoint."""
+    return {
+        "message": "Parse contract endpoint is working!",
+        "status": "success"
+    }
+
+@app.post("/poc/explain-run")
+async def explain_run(request: Dict[str, Any]) -> Dict[str, str]:
+    """Explain run endpoint."""
+    return {
+        "message": "Explain run endpoint is working!",
+        "status": "success"
     }

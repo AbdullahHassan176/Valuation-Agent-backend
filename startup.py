@@ -12,15 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Import and run the FastAPI app
 if __name__ == "__main__":
     import uvicorn
-    from app.main_azure_simple import app
-    from app.database import create_tables
+    from app import app
     
-    # Initialize database collections
-    try:
-        create_tables()
-        print("MongoDB database initialized successfully")
-    except Exception as e:
-        print(f"Warning: Could not initialize database: {e}")
+    print("Starting Valuation Agent Backend...")
     
     # Get port from environment variable (Azure sets this)
     port = int(os.environ.get("PORT", 8000))
