@@ -1,5 +1,5 @@
 [build]
-command = "pip install --upgrade pip && pip install -r requirements-minimal.txt"
+command = "pip install --upgrade pip && pip install -r requirements_ultra_minimal.txt"
 
 [run]
 command = "python startup.py"

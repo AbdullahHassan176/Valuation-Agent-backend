@@ -17,11 +17,11 @@ try:
 except ImportError:
     print("📦 Installing missing dependencies...")
     try:
-        # Try different pip commands
+        # Try different pip commands with ultra minimal requirements
         pip_commands = [
-            [sys.executable, "-m", "pip", "install", "-r", "requirements-minimal.txt"],
-            ["pip3", "install", "-r", "requirements-minimal.txt"],
-            ["pip", "install", "-r", "requirements-minimal.txt"],
+            [sys.executable, "-m", "pip", "install", "-r", "requirements_ultra_minimal.txt"],
+            ["pip3", "install", "-r", "requirements_ultra_minimal.txt"],
+            ["pip", "install", "-r", "requirements_ultra_minimal.txt"],
         ]
         
         for cmd in pip_commands:
@@ -40,7 +40,7 @@ except ImportError:
 # Import and run the FastAPI app
 if __name__ == "__main__":
     import uvicorn
-    from app import app
+    from app_simple import app
     
     print("Starting Valuation Agent Backend...")
     
