@@ -21,9 +21,9 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
-    - name: Test pure Python app
+    - name: Test simple HTTP server
       run: |
-        python -c "from app_pure_python import run_server; print('✅ Pure Python app imports successfully')"
+        python test_server.py
     
     - name: Deploy to Azure
       uses: azure/webapps-deploy@v2
