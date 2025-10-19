@@ -1,29 +1,43 @@
 #!/usr/bin/env python3
 """
-Simple Backend server startup script
+Backend startup script for Azure deployment.
+This ensures the backend runs from the correct directory.
 """
-import sys
+
 import os
+import sys
+import subprocess
+from pathlib import Path
 
-# Add current directory to Python path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
-
-print(f"Current directory: {current_dir}")
-print(f"Python path: {sys.path[:3]}...")
-
-try:
-    import simple_app
-    print("✅ Simple app imported successfully")
+def main():
+    """Start the backend server."""
+    # Get the directory where this script is located
+    backend_dir = Path(__file__).parent
+    os.chdir(backend_dir)
     
-    import uvicorn
-    print("✅ Uvicorn imported successfully")
+    # Set environment variables for Azure
+    os.environ.setdefault('PORT', '8000')
+    os.environ.setdefault('HOST', '0.0.0.0')
     
-    print("🚀 Starting Backend server on http://127.0.0.1:8000")
-    uvicorn.run(simple_app.app, host="127.0.0.1", port=8000, log_level="info")
+    # Start the server
+    cmd = [
+        sys.executable, '-m', 'uvicorn', 
+        'app.main:app', 
+        '--host', '0.0.0.0',
+        '--port', os.environ.get('PORT', '8000'),
+        '--workers', '1'  # Single worker for Azure
+    ]
     
-except Exception as e:
-    print(f"❌ Error: {e}")
-    import traceback
-    traceback.print_exc()
+    print(f"Starting backend from: {backend_dir}")
+    print(f"Command: {' '.join(cmd)}")
+    
+    try:
+        subprocess.run(cmd, check=True)
+    except KeyboardInterrupt:
+        print("Backend stopped by user")
+    except Exception as e:
+        print(f"Error starting backend: {e}")
+        sys.exit(1)
 
+if __name__ == "__main__":
+    main()

@@ -22,12 +22,22 @@ class Settings(BaseSettings):
     
     # OpenAI Configuration
     OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_EMBED_MODEL: str = "text-embedding-3-large"
+    LLM_TEMPERATURE: float = 0.1
+    MAX_OUTPUT_TOKENS: int = 1024
     AZURE_OPENAI_ENDPOINT: Optional[str] = None
     AZURE_OPENAI_API_KEY: Optional[str] = None
     AZURE_OPENAI_API_VERSION: Optional[str] = None
     
     # CORS Configuration
     ALLOW_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"]
+    FRONTEND_ORIGIN: str = "http://localhost:3000"
+    
+    # PoC Feature Flags
+    POC_ENABLE_IFRS: bool = True
+    POC_ENABLE_PARSE: bool = True
+    POC_ENABLE_EXPLAIN: bool = True
     
     # Security Configuration
     API_KEY: Optional[str] = None
@@ -39,11 +49,12 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     
-    class Config:
-        """Pydantic configuration."""
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": True,
+        "extra": "ignore"
+    }
 
 
 # Global settings instance

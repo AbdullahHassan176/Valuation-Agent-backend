@@ -12,6 +12,31 @@ import hashlib
 Base = declarative_base()
 
 
+class Page(Base):
+    """Page model for document pages."""
+    
+    __tablename__ = "pages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    doc_id = Column(String(255), ForeignKey("doc_catalog.doc_id"), nullable=False)
+    page_number = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Chunk(Base):
+    """Chunk model for document chunks."""
+    
+    __tablename__ = "chunks"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    doc_id = Column(String(255), ForeignKey("doc_catalog.doc_id"), nullable=False)
+    page_id = Column(Integer, ForeignKey("pages.id"), nullable=True)
+    chunk_text = Column(Text, nullable=False)
+    chunk_index = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class DocCatalog(Base):
     """Document catalog table for tracking source documents."""
     

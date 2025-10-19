@@ -56,6 +56,32 @@ def chunk_pages(
     return chunks
 
 
+def chunk_document(
+    text: str,
+    doc_id: str,
+    standard: Optional[str] = None,
+    section: Optional[str] = None,
+    paragraph: Optional[str] = None,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 150
+) -> List[Chunk]:
+    """Split document text into chunks with metadata enrichment.
+    
+    Args:
+        text: Document text content to chunk
+        doc_id: Document identifier
+        standard: IFRS standard reference
+        section: Document section
+        paragraph: Document paragraph
+        chunk_size: Maximum chunk size in characters
+        chunk_overlap: Overlap between chunks in characters
+        
+    Returns:
+        List of Chunk objects with enriched metadata
+    """
+    return chunk_text(text, doc_id, standard, section, paragraph, chunk_size, chunk_overlap)
+
+
 def _split_text(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
     """Simple text splitting function."""
     if len(text) <= chunk_size:
@@ -91,6 +117,32 @@ def _split_text(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
             break
     
     return chunks
+
+
+def chunk_document(
+    text: str,
+    doc_id: str,
+    standard: Optional[str] = None,
+    section: Optional[str] = None,
+    paragraph: Optional[str] = None,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 150
+) -> List[Chunk]:
+    """Split document text into chunks with metadata enrichment.
+    
+    Args:
+        text: Document text content to chunk
+        doc_id: Document identifier
+        standard: IFRS standard reference
+        section: Document section
+        paragraph: Document paragraph
+        chunk_size: Maximum chunk size in characters
+        chunk_overlap: Overlap between chunks in characters
+        
+    Returns:
+        List of Chunk objects with enriched metadata
+    """
+    return chunk_text(text, doc_id, standard, section, paragraph, chunk_size, chunk_overlap)
 
 
 def chunk_text(
@@ -139,3 +191,29 @@ def chunk_text(
         chunks.append(chunk)
     
     return chunks
+
+
+def chunk_document(
+    text: str,
+    doc_id: str,
+    standard: Optional[str] = None,
+    section: Optional[str] = None,
+    paragraph: Optional[str] = None,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 150
+) -> List[Chunk]:
+    """Split document text into chunks with metadata enrichment.
+    
+    Args:
+        text: Document text content to chunk
+        doc_id: Document identifier
+        standard: IFRS standard reference
+        section: Document section
+        paragraph: Document paragraph
+        chunk_size: Maximum chunk size in characters
+        chunk_overlap: Overlap between chunks in characters
+        
+    Returns:
+        List of Chunk objects with enriched metadata
+    """
+    return chunk_text(text, doc_id, standard, section, paragraph, chunk_size, chunk_overlap)
