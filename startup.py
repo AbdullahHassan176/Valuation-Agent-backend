@@ -15,14 +15,7 @@ if __name__ == "__main__":
     from app_pure_python import run_server
     
     print("Starting Valuation Agent Backend...")
+    print("Using pure Python HTTP server (no external dependencies)")
     
-    # Get port from environment variable (Azure sets this)
-    port = int(os.environ.get("PORT", 8000))
-    
-    # Run the FastAPI app
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=port,
-        log_level="info"
-    )
+    # Run the pure Python HTTP server
+    run_server()
