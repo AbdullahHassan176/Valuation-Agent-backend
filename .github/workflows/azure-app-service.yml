@@ -27,6 +27,10 @@ jobs:
         pip install -r requirements-minimal.txt
         pip freeze > requirements.txt
     
+    - name: Make startup script executable
+      run: |
+        chmod +x startup.sh
+    
     - name: Test app
       run: |
         python -c "from app import app; print('✅ App imports successfully:', type(app))"

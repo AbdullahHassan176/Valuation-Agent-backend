@@ -3,14 +3,10 @@
 
 echo "Starting Valuation Agent Backend..."
 
-# Install dependencies if not already installed
-if [ ! -f "/home/site/wwwroot/requirements.txt" ]; then
-    echo "Installing dependencies..."
-    pip install -r requirements-minimal.txt
-else
-    echo "Installing dependencies from requirements.txt..."
-    pip install -r requirements.txt
-fi
+# Install dependencies
+echo "Installing Python dependencies..."
+pip install --upgrade pip
+pip install -r requirements.txt
 
 # Start the application
 echo "Starting FastAPI application..."
