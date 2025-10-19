@@ -15,12 +15,12 @@ if __name__ == "__main__":
     from app.main import app
     from app.database import create_tables
     
-    # Initialize database tables
+    # Initialize database collections
     try:
         create_tables()
-        print("Database tables initialized successfully")
+        print("MongoDB database initialized successfully")
     except Exception as e:
-        print(f"Warning: Could not initialize database tables: {e}")
+        print(f"Warning: Could not initialize database: {e}")
     
     # Get port from environment variable (Azure sets this)
     port = int(os.environ.get("PORT", 8000))

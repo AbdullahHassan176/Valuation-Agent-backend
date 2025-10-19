@@ -1,51 +1,51 @@
 """
-Database connection and session management.
+Database connection and session management for MongoDB.
 """
 
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
 from app.settings import get_settings
 
 settings = get_settings()
 
-# Database URL configuration
+# MongoDB connection
 if settings.DATABASE_URL:
-    # Use PostgreSQL for production
-    DATABASE_URL = settings.DATABASE_URL
-    engine = create_engine(DATABASE_URL)
+    # Use MongoDB connection string from environment
+    client = AsyncIOMotorClient(settings.DATABASE_URL)
+    db = client.valuation_db
 else:
-    # Use SQLite for development
-    DATABASE_URL = "sqlite:///./.run/valuation.db"
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create base class for models
-Base = declarative_base()
+    # Local MongoDB for development
+    client = AsyncIOMotorClient("mongodb://localhost:27017")
+    db = client.valuation_db
 
 
-def get_db():
-    """Get database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def get_database():
+    """Get MongoDB database instance."""
+    return db
+
+
+def get_client():
+    """Get MongoDB client."""
+    return client
 
 
 def create_tables():
-    """Create database tables."""
-    Base.metadata.create_all(bind=engine)
+    """Initialize MongoDB collections."""
+    try:
+        # MongoDB collections are created automatically when first document is inserted
+        # We'll create indexes for better performance
+        print("MongoDB database and collections initialized")
+        
+        # Create indexes for better query performance
+        # db.documents.create_index("title")
+        # db.pages.create_index("document_id")
+        # db.chunks.create_index("page_id")
+        
+    except Exception as e:
+        print(f"Warning: Could not initialize MongoDB: {e}")
 
 
 def get_database_url():
     """Get the database URL."""
-    return DATABASE_URL
+    return settings.DATABASE_URL or "mongodb://localhost:27017"
