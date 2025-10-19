@@ -1,20 +1,16 @@
-name: Deploy to Azure App Service
+name: Deploy Backend to Azure
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 env:
   AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
-  AZURE_WEBAPP_PACKAGE_PATH: '.'
   PYTHON_VERSION: '3.11'
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -25,43 +21,18 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
-    - name: Create and start virtual environment
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-    
     - name: Install dependencies
       run: |
-        source venv/bin/activate
         python -m pip install --upgrade pip
         pip install -r requirements-minimal.txt
     
-    - name: Test imports
+    - name: Test app
       run: |
-        source venv/bin/activate
-        python -c "from app import app; print('Import successful')" || echo "Import test completed"
+        python -c "from app import app; print('✅ App imports successfully')"
     
-    - name: Deploy to Azure Web App
-      id: deploy-to-webapp
+    - name: Deploy to Azure
       uses: azure/webapps-deploy@v2
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        slot-name: 'production'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-    
-    - name: Configure App Settings
-      uses: azure/CLI@v1
-      with:
-        inlineScript: |
-          az webapp config appsettings set \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --settings \
-              DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
-              OPENAI_MODEL="gpt-4o-mini" \
-              POC_ENABLE_IFRS="true" \
-              POC_ENABLE_PARSE="true" \
-              POC_ENABLE_EXPLAIN="true" \
-              PYTHONPATH="/home/site/wwwroot"
+        package: '.'
