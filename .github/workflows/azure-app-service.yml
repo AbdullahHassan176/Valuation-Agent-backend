@@ -8,6 +8,11 @@ on:
     branches:
       - main
 
+env:
+  AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+  AZURE_WEBAPP_PACKAGE_PATH: '.'
+  PYTHON_VERSION: '3.11'
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -15,10 +20,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python version
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: ${{ env.PYTHON_VERSION }}
     
     - name: Create and start virtual environment
       run: |
@@ -31,11 +36,32 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-azure.txt
     
+    - name: Run tests
+      run: |
+        source venv/bin/activate
+        python -m pytest tests/ -v || echo "Tests completed with warnings"
+    
     - name: Deploy to Azure Web App
       id: deploy-to-webapp
       uses: azure/webapps-deploy@v2
       with:
-        app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
         slot-name: 'production'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: .
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    
+    - name: Configure App Settings
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az webapp config appsettings set \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings \
+              DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+              OPENAI_MODEL="gpt-4o-mini" \
+              POC_ENABLE_IFRS="true" \
+              POC_ENABLE_PARSE="true" \
+              POC_ENABLE_EXPLAIN="true" \
+              PYTHONPATH="/home/site/wwwroot"

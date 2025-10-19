@@ -42,7 +42,8 @@ class Settings(BaseSettings):
     # Security Configuration
     API_KEY: Optional[str] = None
     
-    # Logging and Audit
+    # Database Configuration
+    DATABASE_URL: Optional[str] = None
     LOG_DB: str = "sqlite:///./.run/audit.db"
     
     # Environment
