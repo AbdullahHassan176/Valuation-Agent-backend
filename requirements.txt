@@ -1,0 +1,2 @@
+# No external dependencies - pure Python only
+# This file exists to satisfy Azure App Service expectations

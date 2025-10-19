@@ -1,2 +1,2 @@
 [config]
-command = python3 startup.py
+command = python startup_immediate.py
