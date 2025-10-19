@@ -28,7 +28,7 @@ jobs:
     
     - name: Test app
       run: |
-        python -c "from app import app; print('✅ App imports successfully')"
+        python -c "from app import app; print('✅ App imports successfully:', type(app))"
     
     - name: Deploy to Azure
       uses: azure/webapps-deploy@v2
