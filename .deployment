@@ -1,2 +1,2 @@
 [config]
-command = python startup.py
+command = python3 startup.py
