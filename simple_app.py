@@ -9,7 +9,8 @@ import uvicorn
 import os
 import sqlite3
 import json
-from datetime import datetime
+import math
+from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
 # Initialize in-memory database
@@ -48,6 +49,75 @@ def init_database():
     
     conn.commit()
     return conn
+
+# Financial calculation functions
+def calculate_present_value(notional: float, rate: float, time_to_maturity: float, 
+                           instrument_type: str = "IRS") -> float:
+    """Calculate present value using simplified financial formulas."""
+    if instrument_type == "IRS":
+        # Interest Rate Swap: PV = Notional * (Fixed Rate - Floating Rate) * Time
+        # Simplified: assume floating rate = 0.05 (5%)
+        floating_rate = 0.05
+        rate_diff = rate - floating_rate
+        pv = notional * rate_diff * time_to_maturity
+    elif instrument_type == "CCS":
+        # Cross Currency Swap: more complex, simplified here
+        pv = notional * rate * time_to_maturity * 0.8  # Currency risk factor
+    else:
+        # Generic bond-like instrument
+        pv = notional * rate * time_to_maturity
+    
+    return pv
+
+def calculate_risk_metrics(notional: float, pv: float, currency: str) -> Dict[str, float]:
+    """Calculate basic risk metrics."""
+    # Simplified risk calculations
+    duration = 2.5  # Simplified duration
+    convexity = 0.1  # Simplified convexity
+    
+    # Interest rate sensitivity (DV01)
+    dv01 = notional * duration * 0.0001
+    
+    # Currency risk (if not USD)
+    fx_risk = 0.0
+    if currency != "USD":
+        fx_risk = abs(pv) * 0.1  # 10% FX risk for non-USD
+    
+    return {
+        "duration": duration,
+        "convexity": convexity,
+        "dv01": dv01,
+        "fx_risk": fx_risk,
+        "var_95": abs(pv) * 0.02,  # 2% VaR
+        "expected_shortfall": abs(pv) * 0.03  # 3% ES
+    }
+
+def generate_realistic_rates(currency: str, base_rate: float = 0.05) -> List[Dict[str, Any]]:
+    """Generate realistic yield curve rates."""
+    tenors = ["1M", "3M", "6M", "1Y", "2Y", "3Y", "5Y", "7Y", "10Y", "15Y", "20Y", "30Y"]
+    rates = []
+    
+    for i, tenor in enumerate(tenors):
+        # Generate realistic yield curve shape
+        if tenor in ["1M", "3M"]:
+            rate = base_rate - 0.01  # Short end lower
+        elif tenor in ["6M", "1Y"]:
+            rate = base_rate  # Around base rate
+        elif tenor in ["2Y", "3Y", "5Y"]:
+            rate = base_rate + 0.005 + (i * 0.001)  # Slight upward slope
+        else:
+            rate = base_rate + 0.01 + (i * 0.0005)  # Long end higher
+        
+        # Add some randomness
+        rate += (hash(tenor + currency) % 100 - 50) / 10000
+        
+        rates.append({
+            "tenor": tenor,
+            "rate": round(rate, 4),
+            "discount_factor": round(math.exp(-rate * (i + 1) / 12), 6)
+        })
+    
+    return rates
 
 # Initialize database
 db_conn = init_database()
@@ -123,8 +193,25 @@ async def create_run(request: dict = None):
         notional_amount = request.get("notional_amount", notional_amount)
         as_of_date = request.get("as_of_date", as_of_date)
     
-    # Calculate realistic PV (simplified)
-    pv_base_ccy = notional_amount * (0.95 + (hash(run_id) % 100) / 1000)  # Simulate realistic PV
+    # Calculate realistic PV using financial formulas
+    time_to_maturity = 5.0  # Default 5 years
+    rate = 0.055  # Default 5.5% rate
+    
+    # Use financial calculation
+    pv_base_ccy = calculate_present_value(notional_amount, rate, time_to_maturity, instrument_type)
+    
+    # Calculate risk metrics
+    risk_metrics = calculate_risk_metrics(notional_amount, pv_base_ccy, currency)
+    
+    # Prepare metadata with risk metrics
+    metadata = {
+        "source": "backend",
+        "calculation_method": "enhanced_financial",
+        "time_to_maturity": time_to_maturity,
+        "rate_used": rate,
+        "risk_metrics": risk_metrics,
+        "calculation_timestamp": current_time
+    }
     
     # Insert into database
     cursor = db_conn.cursor()
@@ -133,15 +220,22 @@ async def create_run(request: dict = None):
                          as_of_date, created_at, pv_base_ccy, metadata)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (run_id, "completed", instrument_type, currency, notional_amount, 
-          as_of_date, current_time, pv_base_ccy, json.dumps({"source": "backend"})))
+          as_of_date, current_time, pv_base_ccy, json.dumps(metadata)))
     
     db_conn.commit()
     
     return {
-        "message": "Run created successfully",
+        "message": "Run created successfully with enhanced financial calculations",
         "status": "success",
         "id": run_id,
-        "pv_base_ccy": pv_base_ccy
+        "pv_base_ccy": round(pv_base_ccy, 2),
+        "risk_metrics": risk_metrics,
+        "calculation_details": {
+            "method": "enhanced_financial",
+            "time_to_maturity": time_to_maturity,
+            "rate_used": rate,
+            "instrument_type": instrument_type
+        }
     }
 
 @app.get("/poc/chat")
@@ -171,22 +265,20 @@ async def get_curves():
             "created_at": row[5]
         })
     
-    # If no curves in database, add some sample curves
+    # If no curves in database, add some sample curves with enhanced calculations
     if not curves:
+        # Generate realistic curves for different currencies
+        usd_rates = generate_realistic_rates("USD", 0.055)
+        eur_rates = generate_realistic_rates("EUR", 0.035)
+        gbp_rates = generate_realistic_rates("GBP", 0.045)
+        
         sample_curves = [
             {
                 "id": "USD_OIS_2024-01-15",
                 "currency": "USD",
                 "type": "OIS",
                 "as_of": "2024-01-15",
-                "nodes": [
-                    {"tenor": "1M", "rate": 0.0525},
-                    {"tenor": "3M", "rate": 0.0530},
-                    {"tenor": "6M", "rate": 0.0535},
-                    {"tenor": "1Y", "rate": 0.0540},
-                    {"tenor": "2Y", "rate": 0.0545},
-                    {"tenor": "5Y", "rate": 0.0550}
-                ],
+                "nodes": usd_rates,
                 "created_at": datetime.now().isoformat()
             },
             {
@@ -194,14 +286,15 @@ async def get_curves():
                 "currency": "EUR",
                 "type": "OIS",
                 "as_of": "2024-01-15",
-                "nodes": [
-                    {"tenor": "1M", "rate": 0.0325},
-                    {"tenor": "3M", "rate": 0.0330},
-                    {"tenor": "6M", "rate": 0.0335},
-                    {"tenor": "1Y", "rate": 0.0340},
-                    {"tenor": "2Y", "rate": 0.0345},
-                    {"tenor": "5Y", "rate": 0.0350}
-                ],
+                "nodes": eur_rates,
+                "created_at": datetime.now().isoformat()
+            },
+            {
+                "id": "GBP_OIS_2024-01-15",
+                "currency": "GBP",
+                "type": "OIS",
+                "as_of": "2024-01-15",
+                "nodes": gbp_rates,
                 "created_at": datetime.now().isoformat()
             }
         ]
