@@ -1,3 +1,0 @@
-[config]
-# Prevent Kudu from trying to run the app during ZIP Deploy; we start via App Service Startup Command
-command = bash -lc "echo 'Kudu ZIP Deploy completed'"
