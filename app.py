@@ -9,6 +9,8 @@ import json
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
 
 # Print startup info immediately
 print("=" * 60)
@@ -109,6 +111,31 @@ class ValuationHandler(BaseHTTPRequestHandler):
                 "status": "success",
                 "timestamp": time.time()
             })
+        elif parsed_path.path == '/poc/chat-gpt':
+            message = data.get('message', '')
+            model = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
+            api_key = os.environ.get('OPENAI_API_KEY')
+
+            if not api_key:
+                self.send_json_response(500, {
+                    "error": "OPENAI_API_KEY not configured in backend",
+                    "status": "error"
+                })
+                return
+
+            try:
+                reply = call_openai_chat(message, api_key, model)
+                self.send_json_response(200, {
+                    "response": reply,
+                    "model": model,
+                    "status": "success",
+                    "timestamp": time.time()
+                })
+            except Exception as e:
+                self.send_json_response(500, {
+                    "error": f"OpenAI call failed: {e}",
+                    "status": "error"
+                })
         else:
             self.send_json_response(404, {"error": "Not found"})
 
@@ -147,6 +174,8 @@ def run_server():
         print("📊 API Endpoints:")
         print(f"  GET  /                    - API info")
         print(f"  GET  /healthz             - Health check")
+        print(f"  POST /poc/chat            - Mock chat")
+        print(f"  POST /poc/chat-gpt        - Real ChatGPT via OpenAI API")
         print("=" * 60)
         
         server.serve_forever()
@@ -156,3 +185,43 @@ def run_server():
 
 if __name__ == "__main__":
     run_server()
+
+# ---- Helpers ----
+def call_openai_chat(message: str, api_key: str, model: str) -> str:
+    """Call OpenAI Chat Completions using only stdlib HTTP.
+
+    Returns the assistant's message content, or raises on failure.
+    """
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a helpful valuation assistant."},
+            {"role": "user", "content": message or "Hello"}
+        ],
+        "max_tokens": 256,
+        "temperature": 0.3,
+    }
+
+    req = Request(
+        url="https://api.openai.com/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(req, timeout=30) as resp:
+            body = resp.read().decode("utf-8")
+            data = json.loads(body)
+    except HTTPError as e:
+        raise RuntimeError(f"HTTPError {e.code}: {e.read().decode('utf-8', 'ignore')}")
+    except URLError as e:
+        raise RuntimeError(f"URLError: {e}")
+
+    try:
+        return data["choices"][0]["message"]["content"].strip()
+    except Exception:
+        raise RuntimeError(f"Unexpected OpenAI response: {data}")
