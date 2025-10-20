@@ -181,21 +181,48 @@ async def create_run(request: dict = None):
     run_id = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     current_time = datetime.now().isoformat()
     
-    # Extract data from request
+    # Extract data from request - handle both old and new payload formats
     instrument_type = "IRS"  # Default
     currency = "USD"  # Default
     notional_amount = 1000000.0  # Default
     as_of_date = datetime.now().strftime('%Y-%m-%d')
+    spec = None
     
     if request:
-        instrument_type = request.get("instrument_type", instrument_type)
-        currency = request.get("currency", currency)
-        notional_amount = request.get("notional_amount", notional_amount)
-        as_of_date = request.get("as_of_date", as_of_date)
+        # Check if this is the new frontend payload format
+        if "spec" in request:
+            spec = request.get("spec", {})
+            instrument_type = "IRS"  # Determine from spec if needed
+            if spec.get("notionalCcy2") or spec.get("ccy2"):
+                instrument_type = "CCS"  # Cross Currency Swap
+            currency = spec.get("ccy", "USD")
+            notional_amount = spec.get("notional", 1000000.0)
+            as_of_date = request.get("asOf", datetime.now().strftime('%Y-%m-%d'))
+        else:
+            # Old format
+            instrument_type = request.get("instrument_type", instrument_type)
+            currency = request.get("currency", currency)
+            notional_amount = request.get("notional_amount", notional_amount)
+            as_of_date = request.get("as_of_date", as_of_date)
     
     # Calculate realistic PV using financial formulas
     time_to_maturity = 5.0  # Default 5 years
     rate = 0.055  # Default 5.5% rate
+    
+    # Use spec data if available for more accurate calculations
+    if spec:
+        # Calculate actual time to maturity from spec
+        if "effective" in spec and "maturity" in spec:
+            try:
+                effective_date = datetime.strptime(spec["effective"], "%Y-%m-%d")
+                maturity_date = datetime.strptime(spec["maturity"], "%Y-%m-%d")
+                time_to_maturity = (maturity_date - effective_date).days / 365.25
+            except:
+                pass  # Use default if parsing fails
+        
+        # Use actual fixed rate from spec
+        if "fixedRate" in spec:
+            rate = spec["fixedRate"]
     
     # Use financial calculation
     pv_base_ccy = calculate_present_value(notional_amount, rate, time_to_maturity, instrument_type)
@@ -203,14 +230,16 @@ async def create_run(request: dict = None):
     # Calculate risk metrics
     risk_metrics = calculate_risk_metrics(notional_amount, pv_base_ccy, currency)
     
-    # Prepare metadata with risk metrics
+    # Prepare metadata with risk metrics and spec data
     metadata = {
         "source": "backend",
         "calculation_method": "enhanced_financial",
         "time_to_maturity": time_to_maturity,
         "rate_used": rate,
         "risk_metrics": risk_metrics,
-        "calculation_timestamp": current_time
+        "calculation_timestamp": current_time,
+        "spec": spec if spec else None,
+        "payload_format": "new_frontend" if spec else "legacy"
     }
     
     # Insert into database
