@@ -1,2 +1,2 @@
 [config]
-command = python3 test_python.py
+command = python3 app_simple_fastapi.py
