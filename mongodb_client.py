@@ -1,0 +1,147 @@
+"""
+MongoDB client for Azure Cosmos DB for MongoDB integration.
+"""
+
+import os
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
+import asyncio
+from typing import Optional, Dict, Any, List
+from datetime import datetime
+import json
+
+class MongoDBClient:
+    """MongoDB client for Azure Cosmos DB for MongoDB."""
+    
+    def __init__(self):
+        # Get MongoDB connection string from environment
+        self.connection_string = os.getenv(
+            "MONGODB_CONNECTION_STRING", 
+            "mongodb://localhost:27017"  # Default for local development
+        )
+        self.database_name = os.getenv("MONGODB_DATABASE", "valuation_db")
+        self.client = None
+        self.db = None
+        
+    async def connect(self):
+        """Connect to MongoDB."""
+        try:
+            self.client = AsyncIOMotorClient(self.connection_string)
+            self.db = self.client[self.database_name]
+            
+            # Test connection
+            await self.client.admin.command('ping')
+            print(f"✅ Connected to MongoDB database: {self.database_name}")
+            return True
+        except Exception as e:
+            print(f"❌ MongoDB connection failed: {e}")
+            return False
+    
+    async def disconnect(self):
+        """Disconnect from MongoDB."""
+        if self.client:
+            self.client.close()
+    
+    async def create_run(self, run_data: Dict[str, Any]) -> str:
+        """Create a new valuation run in MongoDB."""
+        try:
+            # Add timestamp
+            run_data["created_at"] = datetime.utcnow()
+            run_data["updated_at"] = datetime.utcnow()
+            
+            # Insert into runs collection
+            result = await self.db.runs.insert_one(run_data)
+            print(f"✅ Run created with ID: {result.inserted_id}")
+            return str(result.inserted_id)
+        except Exception as e:
+            print(f"❌ Error creating run: {e}")
+            raise e
+    
+    async def get_runs(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get all valuation runs from MongoDB."""
+        try:
+            cursor = self.db.runs.find().sort("created_at", -1).limit(limit)
+            runs = []
+            async for run in cursor:
+                # Convert ObjectId to string
+                run["_id"] = str(run["_id"])
+                runs.append(run)
+            return runs
+        except Exception as e:
+            print(f"❌ Error getting runs: {e}")
+            return []
+    
+    async def get_run_by_id(self, run_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific run by ID."""
+        try:
+            from bson import ObjectId
+            run = await self.db.runs.find_one({"_id": ObjectId(run_id)})
+            if run:
+                run["_id"] = str(run["_id"])
+            return run
+        except Exception as e:
+            print(f"❌ Error getting run {run_id}: {e}")
+            return None
+    
+    async def update_run(self, run_id: str, update_data: Dict[str, Any]) -> bool:
+        """Update a run in MongoDB."""
+        try:
+            from bson import ObjectId
+            update_data["updated_at"] = datetime.utcnow()
+            result = await self.db.runs.update_one(
+                {"_id": ObjectId(run_id)},
+                {"$set": update_data}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            print(f"❌ Error updating run {run_id}: {e}")
+            return False
+    
+    async def delete_run(self, run_id: str) -> bool:
+        """Delete a run from MongoDB."""
+        try:
+            from bson import ObjectId
+            result = await self.db.runs.delete_one({"_id": ObjectId(run_id)})
+            return result.deleted_count > 0
+        except Exception as e:
+            print(f"❌ Error deleting run {run_id}: {e}")
+            return False
+    
+    async def get_database_stats(self) -> Dict[str, Any]:
+        """Get database statistics."""
+        try:
+            run_count = await self.db.runs.count_documents({})
+            curve_count = await self.db.curves.count_documents({})
+            
+            # Get recent runs
+            recent_runs = []
+            cursor = self.db.runs.find().sort("created_at", -1).limit(5)
+            async for run in cursor:
+                recent_runs.append({
+                    "id": str(run["_id"]),
+                    "status": run.get("status", "unknown"),
+                    "instrument_type": run.get("instrument_type", "unknown"),
+                    "currency": run.get("currency", "unknown"),
+                    "notional_amount": run.get("notional_amount", 0),
+                    "created_at": run.get("created_at", "").isoformat() if run.get("created_at") else ""
+                })
+            
+            return {
+                "database_type": "MongoDB (Azure Cosmos DB)",
+                "database_name": self.database_name,
+                "total_runs": run_count,
+                "total_curves": curve_count,
+                "recent_runs": recent_runs,
+                "message": "Data is stored in Azure Cosmos DB and visible in Data Explorer"
+            }
+        except Exception as e:
+            print(f"❌ Error getting database stats: {e}")
+            return {
+                "database_type": "MongoDB (Azure Cosmos DB)",
+                "database_name": self.database_name,
+                "error": str(e),
+                "message": "Error connecting to database"
+            }
+
+# Global MongoDB client instance
+mongodb_client = MongoDBClient()

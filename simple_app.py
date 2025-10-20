@@ -7,50 +7,25 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
-import sqlite3
 import json
 import math
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
+from mongodb_client import mongodb_client
 
-# Initialize persistent database
-def init_database():
-    """Initialize SQLite database for storing runs and data."""
-    # Use persistent file-based database instead of in-memory
-    db_path = "/tmp/valuation_data.db"  # Azure App Service temp directory
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    
-    # Create runs table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS runs (
-            id TEXT PRIMARY KEY,
-            status TEXT NOT NULL,
-            instrument_type TEXT,
-            currency TEXT,
-            notional_amount REAL,
-            as_of_date TEXT,
-            created_at TEXT,
-            completed_at TEXT,
-            pv_base_ccy REAL,
-            metadata TEXT
-        )
-    ''')
-    
-    # Create curves table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS curves (
-            id TEXT PRIMARY KEY,
-            currency TEXT NOT NULL,
-            curve_type TEXT NOT NULL,
-            as_of_date TEXT NOT NULL,
-            nodes TEXT NOT NULL,
-            created_at TEXT
-        )
-    ''')
-    
-    conn.commit()
-    return conn
+# Initialize MongoDB connection
+async def init_database():
+    """Initialize MongoDB connection."""
+    try:
+        success = await mongodb_client.connect()
+        if success:
+            print("✅ MongoDB connected successfully")
+        else:
+            print("❌ MongoDB connection failed, falling back to in-memory storage")
+        return success
+    except Exception as e:
+        print(f"❌ MongoDB initialization error: {e}")
+        return False
 
 # Financial calculation functions
 def calculate_present_value(notional: float, rate: float, time_to_maturity: float, 
@@ -121,8 +96,8 @@ def generate_realistic_rates(currency: str, base_rate: float = 0.05) -> List[Dic
     
     return rates
 
-# Initialize database
-db_conn = init_database()
+# Initialize database (will be called in startup)
+db_initialized = False
 
 # Create FastAPI app
 app = FastAPI(
@@ -130,6 +105,13 @@ app = FastAPI(
     description="Backend service for valuation agent",
     version="1.0.0"
 )
+
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    """Initialize MongoDB connection on startup."""
+    global db_initialized
+    db_initialized = await init_database()
 
 # Add CORS middleware
 app.add_middleware(
@@ -156,65 +138,42 @@ def health():
 @app.get("/api/database/status")
 async def database_status():
     """Get database status and statistics."""
-    cursor = db_conn.cursor()
+    if not db_initialized:
+        return {
+            "database_type": "MongoDB (Azure Cosmos DB)",
+            "status": "not_connected",
+            "message": "MongoDB connection not initialized"
+        }
     
-    # Get run count
-    cursor.execute('SELECT COUNT(*) FROM runs')
-    run_count = cursor.fetchone()[0]
-    
-    # Get curve count
-    cursor.execute('SELECT COUNT(*) FROM curves')
-    curve_count = cursor.fetchone()[0]
-    
-    # Get recent runs
-    cursor.execute('SELECT id, status, instrument_type, currency, notional_amount, created_at FROM runs ORDER BY created_at DESC LIMIT 5')
-    recent_runs = cursor.fetchall()
-    
-    return {
-        "database_type": "SQLite (File-based)",
-        "database_path": "/tmp/valuation_data.db",
-        "total_runs": run_count,
-        "total_curves": curve_count,
-        "recent_runs": [
-            {
-                "id": run[0],
-                "status": run[1],
-                "instrument_type": run[2],
-                "currency": run[3],
-                "notional_amount": run[4],
-                "created_at": run[5]
-            } for run in recent_runs
-        ],
-        "message": "Database is persistent and data will survive app restarts"
-    }
+    try:
+        stats = await mongodb_client.get_database_stats()
+        return stats
+    except Exception as e:
+        return {
+            "database_type": "MongoDB (Azure Cosmos DB)",
+            "status": "error",
+            "error": str(e),
+            "message": "Error retrieving database statistics"
+        }
 
 @app.get("/api/valuation/runs")
 async def get_runs():
-    """Get all valuation runs from database."""
-    cursor = db_conn.cursor()
-    cursor.execute('SELECT * FROM runs ORDER BY created_at DESC')
-    rows = cursor.fetchall()
+    """Get all valuation runs from MongoDB."""
+    if not db_initialized:
+        return {"error": "Database not connected", "runs": []}
     
-    runs = []
-    for row in rows:
-        runs.append({
-            "id": row[0],
-            "status": row[1],
-            "instrument_type": row[2],
-            "currency": row[3],
-            "notional_amount": row[4],
-            "as_of_date": row[5],
-            "created_at": row[6],
-            "completed_at": row[7],
-            "pv_base_ccy": row[8],
-            "metadata": json.loads(row[9]) if row[9] else {}
-        })
-    
-    return runs
+    try:
+        runs = await mongodb_client.get_runs()
+        return runs
+    except Exception as e:
+        return {"error": str(e), "runs": []}
 
 @app.post("/api/valuation/runs")
 async def create_run(request: dict = None):
-    """Create a new valuation run."""
+    """Create a new valuation run in MongoDB."""
+    if not db_initialized:
+        return {"error": "Database not connected", "status": "error"}
+    
     run_id = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     current_time = datetime.now().isoformat()
     
@@ -267,42 +226,50 @@ async def create_run(request: dict = None):
     # Calculate risk metrics
     risk_metrics = calculate_risk_metrics(notional_amount, pv_base_ccy, currency)
     
-    # Prepare metadata with risk metrics and spec data
-    metadata = {
-        "source": "backend",
-        "calculation_method": "enhanced_financial",
-        "time_to_maturity": time_to_maturity,
-        "rate_used": rate,
-        "risk_metrics": risk_metrics,
-        "calculation_timestamp": current_time,
-        "spec": spec if spec else None,
-        "payload_format": "new_frontend" if spec else "legacy"
-    }
-    
-    # Insert into database
-    cursor = db_conn.cursor()
-    cursor.execute('''
-        INSERT INTO runs (id, status, instrument_type, currency, notional_amount, 
-                         as_of_date, created_at, pv_base_ccy, metadata)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (run_id, "completed", instrument_type, currency, notional_amount, 
-          as_of_date, current_time, pv_base_ccy, json.dumps(metadata)))
-    
-    db_conn.commit()
-    
-    return {
-        "message": "Run created successfully with enhanced financial calculations",
-        "status": "success",
+    # Prepare run data for MongoDB
+    run_data = {
         "id": run_id,
+        "status": "completed",
+        "instrument_type": instrument_type,
+        "currency": currency,
+        "notional_amount": notional_amount,
+        "as_of_date": as_of_date,
         "pv_base_ccy": round(pv_base_ccy, 2),
-        "risk_metrics": risk_metrics,
-        "calculation_details": {
-            "method": "enhanced_financial",
+        "spec": spec if spec else None,
+        "metadata": {
+            "source": "backend",
+            "calculation_method": "enhanced_financial",
             "time_to_maturity": time_to_maturity,
             "rate_used": rate,
-            "instrument_type": instrument_type
+            "risk_metrics": risk_metrics,
+            "calculation_timestamp": current_time,
+            "payload_format": "new_frontend" if spec else "legacy"
         }
     }
+    
+    try:
+        # Insert into MongoDB
+        mongo_id = await mongodb_client.create_run(run_data)
+        
+        return {
+            "message": "Run created successfully with enhanced financial calculations",
+            "status": "success",
+            "id": run_id,
+            "mongo_id": mongo_id,
+            "pv_base_ccy": round(pv_base_ccy, 2),
+            "risk_metrics": risk_metrics,
+            "calculation_details": {
+                "method": "enhanced_financial",
+                "time_to_maturity": time_to_maturity,
+                "rate_used": rate,
+                "instrument_type": instrument_type
+            }
+        }
+    except Exception as e:
+        return {
+            "error": f"Failed to create run in MongoDB: {str(e)}",
+            "status": "error"
+        }
 
 @app.get("/poc/chat")
 async def chat_get():
