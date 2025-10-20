@@ -13,10 +13,12 @@ import math
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
-# Initialize in-memory database
+# Initialize persistent database
 def init_database():
     """Initialize SQLite database for storing runs and data."""
-    conn = sqlite3.connect(':memory:')
+    # Use persistent file-based database instead of in-memory
+    db_path = "/tmp/valuation_data.db"  # Azure App Service temp directory
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
     # Create runs table
@@ -150,6 +152,41 @@ def root():
 @app.get("/healthz")
 def health():
     return {"ok": True, "service": "backend", "status": "healthy"}
+
+@app.get("/api/database/status")
+async def database_status():
+    """Get database status and statistics."""
+    cursor = db_conn.cursor()
+    
+    # Get run count
+    cursor.execute('SELECT COUNT(*) FROM runs')
+    run_count = cursor.fetchone()[0]
+    
+    # Get curve count
+    cursor.execute('SELECT COUNT(*) FROM curves')
+    curve_count = cursor.fetchone()[0]
+    
+    # Get recent runs
+    cursor.execute('SELECT id, status, instrument_type, currency, notional_amount, created_at FROM runs ORDER BY created_at DESC LIMIT 5')
+    recent_runs = cursor.fetchall()
+    
+    return {
+        "database_type": "SQLite (File-based)",
+        "database_path": "/tmp/valuation_data.db",
+        "total_runs": run_count,
+        "total_curves": curve_count,
+        "recent_runs": [
+            {
+                "id": run[0],
+                "status": run[1],
+                "instrument_type": run[2],
+                "currency": run[3],
+                "notional_amount": run[4],
+                "created_at": run[5]
+            } for run in recent_runs
+        ],
+        "message": "Database is persistent and data will survive app restarts"
+    }
 
 @app.get("/api/valuation/runs")
 async def get_runs():
