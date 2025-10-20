@@ -1,2 +1,2 @@
 [config]
-command = python3 app_simple_fastapi.py
+command = python3 startup_minimal.py
