@@ -39,6 +39,76 @@ class ValuationHandler(BaseHTTPRequestHandler):
                 "version": "1.0.0",
                 "timestamp": time.time()
             })
+        elif parsed_path.path == '/poc/chat':
+            self.send_json_response(200, {
+                "response": "Hello! I'm your valuation assistant. I can help you with valuation runs, curves, and analysis.",
+                "status": "success",
+                "timestamp": time.time()
+            })
+        elif parsed_path.path == '/api/valuation/runs':
+            # Mock valuation runs
+            runs = [
+                {
+                    "run_id": "run_001",
+                    "as_of_date": "2025-01-18T00:00:00Z",
+                    "valuation_type": "IRS",
+                    "status": "completed",
+                    "created_at": "2025-01-18T08:00:00Z"
+                },
+                {
+                    "run_id": "run_002", 
+                    "as_of_date": "2025-01-18T00:00:00Z",
+                    "valuation_type": "CCS",
+                    "status": "running",
+                    "created_at": "2025-01-18T08:30:00Z"
+                }
+            ]
+            self.send_json_response(200, runs)
+        elif parsed_path.path == '/api/valuation/curves':
+            # Mock curves
+            curves = [
+                {
+                    "id": "curve_001",
+                    "name": "USD OIS",
+                    "currency": "USD",
+                    "curve_type": "OIS",
+                    "status": "active",
+                    "nodes": 47,
+                    "version": "2.1.4"
+                },
+                {
+                    "id": "curve_002",
+                    "name": "EUR OIS", 
+                    "currency": "EUR",
+                    "curve_type": "OIS",
+                    "status": "active",
+                    "nodes": 45,
+                    "version": "2.1.4"
+                }
+            ]
+            self.send_json_response(200, curves)
+        else:
+            self.send_json_response(404, {"error": "Not found"})
+
+    def do_POST(self):
+        """Handle POST requests."""
+        parsed_path = urlparse(self.path)
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        
+        try:
+            data = json.loads(post_data.decode('utf-8'))
+        except:
+            data = {}
+        
+        if parsed_path.path == '/poc/chat':
+            message = data.get('message', '')
+            response = f"Echo: {message}. I'm working and connected to the backend!"
+            self.send_json_response(200, {
+                "response": response,
+                "status": "success",
+                "timestamp": time.time()
+            })
         else:
             self.send_json_response(404, {"error": "Not found"})
 
