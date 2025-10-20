@@ -7,6 +7,50 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
+import sqlite3
+import json
+from datetime import datetime
+from typing import List, Dict, Any
+
+# Initialize in-memory database
+def init_database():
+    """Initialize SQLite database for storing runs and data."""
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
+    
+    # Create runs table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS runs (
+            id TEXT PRIMARY KEY,
+            status TEXT NOT NULL,
+            instrument_type TEXT,
+            currency TEXT,
+            notional_amount REAL,
+            as_of_date TEXT,
+            created_at TEXT,
+            completed_at TEXT,
+            pv_base_ccy REAL,
+            metadata TEXT
+        )
+    ''')
+    
+    # Create curves table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS curves (
+            id TEXT PRIMARY KEY,
+            currency TEXT NOT NULL,
+            curve_type TEXT NOT NULL,
+            as_of_date TEXT NOT NULL,
+            nodes TEXT NOT NULL,
+            created_at TEXT
+        )
+    ''')
+    
+    conn.commit()
+    return conn
+
+# Initialize database
+db_conn = init_database()
 
 # Create FastAPI app
 app = FastAPI(
@@ -39,11 +83,66 @@ def health():
 
 @app.get("/api/valuation/runs")
 async def get_runs():
-    return []
+    """Get all valuation runs from database."""
+    cursor = db_conn.cursor()
+    cursor.execute('SELECT * FROM runs ORDER BY created_at DESC')
+    rows = cursor.fetchall()
+    
+    runs = []
+    for row in rows:
+        runs.append({
+            "id": row[0],
+            "status": row[1],
+            "instrument_type": row[2],
+            "currency": row[3],
+            "notional_amount": row[4],
+            "as_of_date": row[5],
+            "created_at": row[6],
+            "completed_at": row[7],
+            "pv_base_ccy": row[8],
+            "metadata": json.loads(row[9]) if row[9] else {}
+        })
+    
+    return runs
 
 @app.post("/api/valuation/runs")
-async def create_run():
-    return {"message": "Run creation endpoint active", "status": "success", "id": "test-run-001"}
+async def create_run(request: dict = None):
+    """Create a new valuation run."""
+    run_id = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    current_time = datetime.now().isoformat()
+    
+    # Extract data from request
+    instrument_type = "IRS"  # Default
+    currency = "USD"  # Default
+    notional_amount = 1000000.0  # Default
+    as_of_date = datetime.now().strftime('%Y-%m-%d')
+    
+    if request:
+        instrument_type = request.get("instrument_type", instrument_type)
+        currency = request.get("currency", currency)
+        notional_amount = request.get("notional_amount", notional_amount)
+        as_of_date = request.get("as_of_date", as_of_date)
+    
+    # Calculate realistic PV (simplified)
+    pv_base_ccy = notional_amount * (0.95 + (hash(run_id) % 100) / 1000)  # Simulate realistic PV
+    
+    # Insert into database
+    cursor = db_conn.cursor()
+    cursor.execute('''
+        INSERT INTO runs (id, status, instrument_type, currency, notional_amount, 
+                         as_of_date, created_at, pv_base_ccy, metadata)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (run_id, "completed", instrument_type, currency, notional_amount, 
+          as_of_date, current_time, pv_base_ccy, json.dumps({"source": "backend"})))
+    
+    db_conn.commit()
+    
+    return {
+        "message": "Run created successfully",
+        "status": "success",
+        "id": run_id,
+        "pv_base_ccy": pv_base_ccy
+    }
 
 @app.get("/poc/chat")
 async def chat_get():
@@ -56,14 +155,71 @@ async def chat_post():
 # POC endpoints for advanced functionality
 @app.get("/api/valuation/curves")
 async def get_curves():
-    """Get available yield curves."""
+    """Get available yield curves from database."""
+    cursor = db_conn.cursor()
+    cursor.execute('SELECT * FROM curves ORDER BY created_at DESC')
+    rows = cursor.fetchall()
+    
+    curves = []
+    for row in rows:
+        curves.append({
+            "id": row[0],
+            "currency": row[1],
+            "type": row[2],
+            "as_of": row[3],
+            "nodes": json.loads(row[4]) if row[4] else [],
+            "created_at": row[5]
+        })
+    
+    # If no curves in database, add some sample curves
+    if not curves:
+        sample_curves = [
+            {
+                "id": "USD_OIS_2024-01-15",
+                "currency": "USD",
+                "type": "OIS",
+                "as_of": "2024-01-15",
+                "nodes": [
+                    {"tenor": "1M", "rate": 0.0525},
+                    {"tenor": "3M", "rate": 0.0530},
+                    {"tenor": "6M", "rate": 0.0535},
+                    {"tenor": "1Y", "rate": 0.0540},
+                    {"tenor": "2Y", "rate": 0.0545},
+                    {"tenor": "5Y", "rate": 0.0550}
+                ],
+                "created_at": datetime.now().isoformat()
+            },
+            {
+                "id": "EUR_OIS_2024-01-15",
+                "currency": "EUR",
+                "type": "OIS",
+                "as_of": "2024-01-15",
+                "nodes": [
+                    {"tenor": "1M", "rate": 0.0325},
+                    {"tenor": "3M", "rate": 0.0330},
+                    {"tenor": "6M", "rate": 0.0335},
+                    {"tenor": "1Y", "rate": 0.0340},
+                    {"tenor": "2Y", "rate": 0.0345},
+                    {"tenor": "5Y", "rate": 0.0350}
+                ],
+                "created_at": datetime.now().isoformat()
+            }
+        ]
+        
+        # Insert sample curves into database
+        for curve in sample_curves:
+            cursor.execute('''
+                INSERT INTO curves (id, currency, curve_type, as_of_date, nodes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (curve["id"], curve["currency"], curve["type"], curve["as_of"], 
+                  json.dumps(curve["nodes"]), curve["created_at"]))
+        
+        db_conn.commit()
+        curves = sample_curves
+    
     return {
-        "curves": [
-            {"id": "USD_OIS_2024-01-15", "currency": "USD", "type": "OIS", "as_of": "2024-01-15"},
-            {"id": "EUR_OIS_2024-01-15", "currency": "EUR", "type": "OIS", "as_of": "2024-01-15"},
-            {"id": "GBP_OIS_2024-01-15", "currency": "GBP", "type": "OIS", "as_of": "2024-01-15"}
-        ],
-        "total_curves": 3,
+        "curves": curves,
+        "total_curves": len(curves),
         "message": "Available yield curves for valuation"
     }
 
