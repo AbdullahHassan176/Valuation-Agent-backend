@@ -329,6 +329,73 @@ async def create_run(request: dict = None):
         }
     }
 
+@app.get("/api/valuation/curves")
+async def get_curves():
+    """Get yield curves from MongoDB or fallback storage."""
+    if not MONGODB_AVAILABLE or not db_initialized:
+        # Return fallback curves or generate sample curves
+        if not fallback_curves:
+            # Generate sample curves if none exist
+            sample_curves = []
+            for currency in ["USD", "EUR", "GBP"]:
+                curve_data = {
+                    "id": f"{currency}_OIS_{datetime.now().strftime('%Y-%m-%d')}",
+                    "currency": currency,
+                    "type": "OIS",
+                    "as_of_date": datetime.now().strftime('%Y-%m-%d'),
+                    "nodes": generate_realistic_rates(currency, 0.05),
+                    "created_at": datetime.now().isoformat()
+                }
+                sample_curves.append(curve_data)
+                fallback_curves.append(curve_data)
+            return sample_curves
+        return fallback_curves
+    
+    try:
+        # Get curves from MongoDB
+        curves = await mongodb_client.get_curves()
+        return curves
+    except Exception as e:
+        # Fallback to in-memory storage
+        return fallback_curves
+
+@app.post("/api/valuation/curves")
+async def create_curves():
+    """Create sample yield curves."""
+    curves_created = []
+    
+    for currency in ["USD", "EUR", "GBP"]:
+        curve_data = {
+            "id": f"{currency}_OIS_{datetime.now().strftime('%Y-%m-%d')}",
+            "currency": currency,
+            "type": "OIS",
+            "as_of_date": datetime.now().strftime('%Y-%m-%d'),
+            "nodes": generate_realistic_rates(currency, 0.05),
+            "created_at": datetime.now().isoformat()
+        }
+        
+        if MONGODB_AVAILABLE and db_initialized:
+            try:
+                # Store in MongoDB
+                mongo_id = await mongodb_client.create_curve(curve_data)
+                curve_data["_id"] = mongo_id
+                curves_created.append(curve_data)
+            except Exception as e:
+                print(f"❌ Error storing curve in MongoDB: {e}")
+                # Fallback to in-memory storage
+                fallback_curves.append(curve_data)
+                curves_created.append(curve_data)
+        else:
+            # Store in fallback storage
+            fallback_curves.append(curve_data)
+            curves_created.append(curve_data)
+    
+    return {
+        "message": f"Created {len(curves_created)} yield curves",
+        "curves": curves_created,
+        "storage_type": "MongoDB" if (MONGODB_AVAILABLE and db_initialized) else "Fallback"
+    }
+
 @app.get("/poc/chat")
 async def chat_get():
     return {"message": "Chat endpoint active", "status": "ready"}
@@ -337,75 +404,60 @@ async def chat_get():
 async def chat_post():
     return {"response": "Chat endpoint working", "status": "success"}
 
+@app.get("/api/test/mongodb")
+async def test_mongodb():
+    """Test MongoDB connection and create sample data."""
+    if not MONGODB_AVAILABLE:
+        return {
+            "status": "error",
+            "message": "MongoDB dependencies not available",
+            "mongodb_available": False
+        }
+    
+    if not db_initialized:
+        return {
+            "status": "error", 
+            "message": "MongoDB not connected",
+            "mongodb_connected": False
+        }
+    
+    try:
+        # Test connection by creating a test run
+        test_run = {
+            "id": f"test-run-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+            "status": "test",
+            "instrument_type": "TEST",
+            "currency": "USD",
+            "notional_amount": 1000.0,
+            "as_of_date": datetime.now().strftime('%Y-%m-%d'),
+            "pv_base_ccy": 1000.0,
+            "test": True,
+            "created_at": datetime.now().isoformat()
+        }
+        
+        mongo_id = await mongodb_client.create_run(test_run)
+        
+        # Get database stats
+        stats = await mongodb_client.get_database_stats()
+        
+        return {
+            "status": "success",
+            "message": "MongoDB connection working",
+            "mongodb_available": True,
+            "mongodb_connected": True,
+            "test_run_id": mongo_id,
+            "database_stats": stats
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"MongoDB test failed: {str(e)}",
+            "mongodb_available": True,
+            "mongodb_connected": False,
+            "error": str(e)
+        }
+
 # POC endpoints for advanced functionality
-@app.get("/api/valuation/curves")
-async def get_curves():
-    """Get available yield curves from database."""
-    cursor = db_conn.cursor()
-    cursor.execute('SELECT * FROM curves ORDER BY created_at DESC')
-    rows = cursor.fetchall()
-    
-    curves = []
-    for row in rows:
-        curves.append({
-            "id": row[0],
-            "currency": row[1],
-            "type": row[2],
-            "as_of": row[3],
-            "nodes": json.loads(row[4]) if row[4] else [],
-            "created_at": row[5]
-        })
-    
-    # If no curves in database, add some sample curves with enhanced calculations
-    if not curves:
-        # Generate realistic curves for different currencies
-        usd_rates = generate_realistic_rates("USD", 0.055)
-        eur_rates = generate_realistic_rates("EUR", 0.035)
-        gbp_rates = generate_realistic_rates("GBP", 0.045)
-        
-        sample_curves = [
-            {
-                "id": "USD_OIS_2024-01-15",
-                "currency": "USD",
-                "type": "OIS",
-                "as_of": "2024-01-15",
-                "nodes": usd_rates,
-                "created_at": datetime.now().isoformat()
-            },
-            {
-                "id": "EUR_OIS_2024-01-15",
-                "currency": "EUR",
-                "type": "OIS",
-                "as_of": "2024-01-15",
-                "nodes": eur_rates,
-                "created_at": datetime.now().isoformat()
-            },
-            {
-                "id": "GBP_OIS_2024-01-15",
-                "currency": "GBP",
-                "type": "OIS",
-                "as_of": "2024-01-15",
-                "nodes": gbp_rates,
-                "created_at": datetime.now().isoformat()
-            }
-        ]
-        
-        # Insert sample curves into database
-        for curve in sample_curves:
-            cursor.execute('''
-                INSERT INTO curves (id, currency, curve_type, as_of_date, nodes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (curve["id"], curve["currency"], curve["type"], curve["as_of"], 
-                  json.dumps(curve["nodes"]), curve["created_at"]))
-        
-        db_conn.commit()
-        curves = sample_curves
-    
-    return {
-        "curves": curves,
-        "total_curves": len(curves),
-        "message": "Available yield curves for valuation"
-    }
 
 @app.post("/poc/ifrs-ask")
 async def ifrs_ask(request: dict = None):

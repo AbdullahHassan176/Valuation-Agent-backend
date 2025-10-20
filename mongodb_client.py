@@ -142,6 +142,35 @@ class MongoDBClient:
                 "error": str(e),
                 "message": "Error connecting to database"
             }
+    
+    async def create_curve(self, curve_data: Dict[str, Any]) -> str:
+        """Create a new yield curve in MongoDB."""
+        try:
+            # Add timestamp
+            curve_data["created_at"] = datetime.utcnow()
+            curve_data["updated_at"] = datetime.utcnow()
+            
+            # Insert into curves collection
+            result = await self.db.curves.insert_one(curve_data)
+            print(f"✅ Curve created with ID: {result.inserted_id}")
+            return str(result.inserted_id)
+        except Exception as e:
+            print(f"❌ Error creating curve: {e}")
+            raise e
+    
+    async def get_curves(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get all yield curves from MongoDB."""
+        try:
+            cursor = self.db.curves.find().sort("created_at", -1).limit(limit)
+            curves = []
+            async for curve in cursor:
+                # Convert ObjectId to string
+                curve["_id"] = str(curve["_id"])
+                curves.append(curve)
+            return curves
+        except Exception as e:
+            print(f"❌ Error getting curves: {e}")
+            return []
 
 # Global MongoDB client instance
 mongodb_client = MongoDBClient()
