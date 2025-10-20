@@ -476,3 +476,6 @@ def validate_security(config: Dict[str, Any]) -> SecurityReport:
     """Main function to validate security configuration"""
     validator = SecurityValidator()
     return validator.generate_security_report(config)
+
+
+

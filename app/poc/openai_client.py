@@ -104,3 +104,6 @@ class OpenAIClient:
 
 # Global client instance
 openai_client = OpenAIClient()
+
+
+

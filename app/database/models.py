@@ -173,3 +173,6 @@ class MarketDataConfig(BaseRecord):
     credentials: Optional[Dict[str, str]] = Field(None, description="Credentials")
     is_active: bool = Field(default=True, description="Whether source is active")
     refresh_interval_minutes: int = Field(default=60, description="Refresh interval in minutes")
+
+
+

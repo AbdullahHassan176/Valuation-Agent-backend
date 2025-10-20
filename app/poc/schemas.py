@@ -68,3 +68,6 @@ class HealthResponse(BaseModel):
     status: str = "OK"
     enabled_features: List[str] = []
     version: str = "1.0.0"
+
+
+

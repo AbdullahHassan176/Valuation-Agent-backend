@@ -24,3 +24,6 @@ az webapp config appsettings set --resource-group $resourceGroup --name $appName
 
 Write-Host "✅ Environment variables configured!" -ForegroundColor Green
 Write-Host "⚠️  Remember to replace 'your_actual_openai_api_key_here' with your real OpenAI API key!" -ForegroundColor Red
+
+
+

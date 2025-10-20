@@ -25,3 +25,6 @@ print("✅ Minimal startup completed successfully")
 print("✅ Backend deployment is working")
 print("=" * 60)
 sys.exit(0)
+
+
+

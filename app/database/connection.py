@@ -60,3 +60,6 @@ async def get_collection(collection_name: str):
     if not db_manager.db:
         await db_manager.connect()
     return db_manager.get_collection(collection_name)
+
+
+

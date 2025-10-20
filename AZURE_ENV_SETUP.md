@@ -85,3 +85,6 @@ curl -X POST https://valuation-backend-ephph9gkdjcca0c0.canadacentral-01.azurewe
 2. Test the backend endpoints
 3. Update your frontend to use the backend
 4. Test the full application
+
+
+

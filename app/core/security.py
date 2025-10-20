@@ -23,3 +23,6 @@ def validate_api_key(api_key: Optional[str]) -> bool:
         return True
         
     return api_key == settings.API_KEY
+
+
+
