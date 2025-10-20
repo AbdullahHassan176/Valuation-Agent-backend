@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 # Print startup info immediately
 print("=" * 60)
-print("VALUATION AGENT BACKEND - STARTING")
+print("VALUATION AGENT BACKEND - STARTING v2.0")
 print("=" * 60)
 print(f"Python version: {sys.version}")
 print(f"Working directory: {os.getcwd()}")
