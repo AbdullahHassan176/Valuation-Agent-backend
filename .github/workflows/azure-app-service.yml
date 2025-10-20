@@ -32,6 +32,10 @@ jobs:
         ls -la
         echo "Python files:"
         find . -name "*.py" -type f
+        echo "Checking startup_working.py specifically:"
+        ls -la startup_working.py
+        echo "File contents (first 10 lines):"
+        head -10 startup_working.py
     
     - name: Deploy to Azure
       uses: azure/webapps-deploy@v2

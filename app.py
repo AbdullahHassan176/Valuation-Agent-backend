@@ -1,84 +1,88 @@
+#!/usr/bin/env python3
 """
 Ultra-simple FastAPI app for Azure deployment.
-No complex imports, just basic functionality.
 """
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Dict, Any
+import os
+import sys
+import json
+import time
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse
 
-# Create FastAPI application
-app = FastAPI(
-    title="Valuation Agent Backend",
-    description="Simple backend for valuation agent",
-    version="1.0.0"
-)
+# Print startup info immediately
+print("=" * 60)
+print("VALUATION AGENT BACKEND - SIMPLE VERSION")
+print("=" * 60)
+print(f"Python version: {sys.version}")
+print(f"Working directory: {os.getcwd()}")
+print(f"Environment PORT: {os.environ.get('PORT', '8000')}")
+print(f"Timestamp: {time.time()}")
+print("=" * 60)
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class ValuationHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        """Handle GET requests."""
+        parsed_path = urlparse(self.path)
+        
+        if parsed_path.path == '/':
+            self.send_json_response(200, {
+                "message": "Valuation Agent Backend API",
+                "version": "1.0.0",
+                "status": "running",
+                "timestamp": time.time()
+            })
+        elif parsed_path.path == '/healthz':
+            self.send_json_response(200, {
+                "status": "healthy",
+                "service": "valuation-backend",
+                "version": "1.0.0",
+                "timestamp": time.time()
+            })
+        else:
+            self.send_json_response(404, {"error": "Not found"})
 
-# Request models
-class ChatRequest(BaseModel):
-    message: str
-    user_id: str = "default"
+    def do_OPTIONS(self):
+        """Handle CORS preflight requests."""
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.end_headers()
 
-class ChatResponse(BaseModel):
-    response: str
-    status: str = "success"
+    def send_json_response(self, status_code, data):
+        """Send JSON response."""
+        self.send_response(status_code)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(json.dumps(data, indent=2).encode())
 
-@app.get("/")
-async def root() -> Dict[str, str]:
-    """Root endpoint."""
-    return {
-        "message": "Valuation Agent Backend API",
-        "version": "1.0.0",
-        "status": "running"
-    }
+    def log_message(self, format, *args):
+        """Override to reduce logging noise."""
+        pass
 
-@app.get("/healthz")
-async def health_check() -> Dict[str, str]:
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "service": "valuation-backend",
-        "version": "1.0.0"
-    }
+def run_server():
+    """Run the HTTP server."""
+    port = int(os.environ.get('PORT', 8000))
+    
+    print("✅ Starting HTTP server...")
+    print(f"✅ Server will run on port {port}")
+    print("✅ Ready to accept connections")
+    print("=" * 60)
+    
+    try:
+        server = HTTPServer(('0.0.0.0', port), ValuationHandler)
+        print(f"🚀 Server running at http://0.0.0.0:{port}")
+        print("📊 API Endpoints:")
+        print(f"  GET  /                    - API info")
+        print(f"  GET  /healthz             - Health check")
+        print("=" * 60)
+        
+        server.serve_forever()
+    except Exception as e:
+        print(f"❌ Server failed to start: {e}")
+        sys.exit(1)
 
-@app.post("/poc/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest) -> ChatResponse:
-    """Simple chat endpoint."""
-    return ChatResponse(
-        response=f"Echo: {request.message}",
-        status="success"
-    )
-
-@app.post("/poc/ifrs-ask")
-async def ifrs_ask(request: Dict[str, Any]) -> Dict[str, str]:
-    """IFRS ask endpoint."""
-    return {
-        "message": "IFRS ask endpoint is working!",
-        "status": "success"
-    }
-
-@app.post("/poc/parse-contract")
-async def parse_contract(request: Dict[str, Any]) -> Dict[str, str]:
-    """Parse contract endpoint."""
-    return {
-        "message": "Parse contract endpoint is working!",
-        "status": "success"
-    }
-
-@app.post("/poc/explain-run")
-async def explain_run(request: Dict[str, Any]) -> Dict[str, str]:
-    """Explain run endpoint."""
-    return {
-        "message": "Explain run endpoint is working!",
-        "status": "success"
-    }
+if __name__ == "__main__":
+    run_server()
