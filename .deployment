@@ -1,2 +1,2 @@
 [config]
-command = python3 startup_flexible.py
+command = python3 test_python.py
