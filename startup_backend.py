@@ -21,13 +21,14 @@ def main():
     sys.path.insert(0, str(current_dir))
     
     try:
-        # Try to import and run the FastAPI app
-        from app.app import app
-        import uvicorn
-        
-        print("Starting FastAPI backend service...")
+        # Try to run the simple app first
+        print("Starting simple FastAPI backend service...")
         print(f"Python path: {sys.path}")
         print(f"Current directory: {current_dir}")
+        
+        # Import and run simple app
+        from simple_app import app
+        import uvicorn
         
         # Start the server
         uvicorn.run(
