@@ -33,13 +33,13 @@
    - **Value**: Your connection string from Step 2
 4. Add another setting:
    - **Name**: `MONGODB_DATABASE`
-   - **Value**: `valuation_db`
+   - **Value**: `valuation-backend-server`
 5. Click "Save"
 
 ### Option B: Using Azure CLI
 ```bash
 az webapp config appsettings set --name valuation-backend-ephph9gkdjcca0c0 --resource-group your-resource-group --settings MONGODB_CONNECTION_STRING="your-connection-string"
-az webapp config appsettings set --name valuation-backend-ephph9gkdjcca0c0 --resource-group your-resource-group --settings MONGODB_DATABASE="valuation_db"
+az webapp config appsettings set --name valuation-backend-ephph9gkdjcca0c0 --resource-group your-resource-group --settings MONGODB_DATABASE="valuation-backend-server"
 ```
 
 ## Step 4: Restart App Service
@@ -54,7 +54,7 @@ az webapp config appsettings set --name valuation-backend-ephph9gkdjcca0c0 --res
 2. Click "🗄️ Test Database Status"
 3. You should see:
    - Database Type: MongoDB (Azure Cosmos DB)
-   - Database Name: valuation_db
+   - Database Name: valuation-backend-server
    - Total Runs: 0 (initially)
    - Message: "Data is stored in Azure Cosmos DB and visible in Data Explorer"
 
@@ -63,7 +63,7 @@ az webapp config appsettings set --name valuation-backend-ephph9gkdjcca0c0 --res
 1. Go to your Cosmos DB account in Azure Portal
 2. Click "Data Explorer" in the left menu
 3. You should see:
-   - Database: `valuation_db`
+   - Database: `valuation-backend-server`
    - Collections: `runs`, `curves`
 4. Click on `runs` collection to see your valuation runs
 5. Click on `curves` collection to see yield curve data
@@ -76,7 +76,7 @@ az webapp config appsettings set --name valuation-backend-ephph9gkdjcca0c0 --res
 - Ensure the Cosmos DB account is accessible
 
 ### Data Not Appearing
-- Check the database name matches (`valuation_db`)
+- Check the database name matches (`valuation-backend-server`)
 - Verify the collections are created (`runs`, `curves`)
 - Check the App Service logs for errors
 
@@ -89,7 +89,7 @@ az webapp config appsettings set --name valuation-backend-ephph9gkdjcca0c0 --res
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `MONGODB_CONNECTION_STRING` | Cosmos DB connection string | `mongodb://account:key@account.mongo.cosmos.azure.com:10255/?ssl=true` |
-| `MONGODB_DATABASE` | Database name | `valuation_db` |
+| `MONGODB_DATABASE` | Database name | `valuation-backend-server` |
 
 ## Next Steps
 

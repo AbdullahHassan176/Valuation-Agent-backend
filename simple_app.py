@@ -17,6 +17,13 @@ from mongodb_client import mongodb_client
 async def init_database():
     """Initialize MongoDB connection."""
     try:
+        # Check if MongoDB connection string is configured
+        connection_string = os.getenv("MONGODB_CONNECTION_STRING")
+        if not connection_string or connection_string == "mongodb://localhost:27017":
+            print("⚠️ MongoDB connection string not configured, using fallback mode")
+            print("💡 To enable MongoDB: Set MONGODB_CONNECTION_STRING environment variable")
+            return False
+            
         success = await mongodb_client.connect()
         if success:
             print("✅ MongoDB connected successfully")
@@ -99,6 +106,10 @@ def generate_realistic_rates(currency: str, base_rate: float = 0.05) -> List[Dic
 # Initialize database (will be called in startup)
 db_initialized = False
 
+# Fallback in-memory storage for when MongoDB isn't available
+fallback_runs = []
+fallback_curves = []
+
 # Create FastAPI app
 app = FastAPI(
     title="Valuation Agent Backend",
@@ -140,9 +151,12 @@ async def database_status():
     """Get database status and statistics."""
     if not db_initialized:
         return {
-            "database_type": "MongoDB (Azure Cosmos DB)",
-            "status": "not_connected",
-            "message": "MongoDB connection not initialized"
+            "database_type": "Fallback Mode (In-Memory)",
+            "database_name": "fallback_storage",
+            "total_runs": len(fallback_runs),
+            "total_curves": len(fallback_curves),
+            "recent_runs": fallback_runs[-5:] if fallback_runs else [],
+            "message": "MongoDB not configured - using in-memory storage. Configure MONGODB_CONNECTION_STRING to use Azure Cosmos DB."
         }
     
     try:
@@ -152,27 +166,29 @@ async def database_status():
         return {
             "database_type": "MongoDB (Azure Cosmos DB)",
             "status": "error",
-            "error": str(e),
+            "error": str(e)",
             "message": "Error retrieving database statistics"
         }
 
 @app.get("/api/valuation/runs")
 async def get_runs():
-    """Get all valuation runs from MongoDB."""
+    """Get all valuation runs from MongoDB or fallback storage."""
     if not db_initialized:
-        return {"error": "Database not connected", "runs": []}
+        # Return fallback runs
+        return fallback_runs
     
     try:
         runs = await mongodb_client.get_runs()
         return runs
     except Exception as e:
-        return {"error": str(e), "runs": []}
+        # Fallback to in-memory storage
+        return fallback_runs
 
 @app.post("/api/valuation/runs")
 async def create_run(request: dict = None):
-    """Create a new valuation run in MongoDB."""
+    """Create a new valuation run in MongoDB or fallback storage."""
     if not db_initialized:
-        return {"error": "Database not connected", "status": "error"}
+        print("⚠️ MongoDB not available, using fallback storage")
     
     run_id = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     current_time = datetime.now().isoformat()
@@ -247,29 +263,47 @@ async def create_run(request: dict = None):
         }
     }
     
-    try:
-        # Insert into MongoDB
-        mongo_id = await mongodb_client.create_run(run_data)
-        
-        return {
-            "message": "Run created successfully with enhanced financial calculations",
-            "status": "success",
-            "id": run_id,
-            "mongo_id": mongo_id,
-            "pv_base_ccy": round(pv_base_ccy, 2),
-            "risk_metrics": risk_metrics,
-            "calculation_details": {
-                "method": "enhanced_financial",
-                "time_to_maturity": time_to_maturity,
-                "rate_used": rate,
-                "instrument_type": instrument_type
+    if db_initialized:
+        try:
+            # Insert into MongoDB
+            mongo_id = await mongodb_client.create_run(run_data)
+            
+            return {
+                "message": "Run created successfully with enhanced financial calculations (MongoDB)",
+                "status": "success",
+                "id": run_id,
+                "mongo_id": mongo_id,
+                "pv_base_ccy": round(pv_base_ccy, 2),
+                "risk_metrics": risk_metrics,
+                "calculation_details": {
+                    "method": "enhanced_financial",
+                    "time_to_maturity": time_to_maturity,
+                    "rate_used": rate,
+                    "instrument_type": instrument_type
+                }
             }
+        except Exception as e:
+            print(f"❌ MongoDB error: {e}, falling back to in-memory storage")
+            # Fall through to fallback storage
+    
+    # Fallback to in-memory storage
+    run_data["_id"] = f"fallback_{run_id}"
+    fallback_runs.append(run_data)
+    
+    return {
+        "message": "Run created successfully with enhanced financial calculations (Fallback Storage)",
+        "status": "success",
+        "id": run_id,
+        "storage_type": "fallback",
+        "pv_base_ccy": round(pv_base_ccy, 2),
+        "risk_metrics": risk_metrics,
+        "calculation_details": {
+            "method": "enhanced_financial",
+            "time_to_maturity": time_to_maturity,
+            "rate_used": rate,
+            "instrument_type": instrument_type
         }
-    except Exception as e:
-        return {
-            "error": f"Failed to create run in MongoDB: {str(e)}",
-            "status": "error"
-        }
+    }
 
 @app.get("/poc/chat")
 async def chat_get():

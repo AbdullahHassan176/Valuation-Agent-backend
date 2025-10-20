@@ -19,7 +19,7 @@ class MongoDBClient:
             "MONGODB_CONNECTION_STRING", 
             "mongodb://localhost:27017"  # Default for local development
         )
-        self.database_name = os.getenv("MONGODB_DATABASE", "valuation_db")
+        self.database_name = os.getenv("MONGODB_DATABASE", "valuation-backend-server")
         self.client = None
         self.db = None
         
