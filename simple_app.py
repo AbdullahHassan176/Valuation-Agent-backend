@@ -457,6 +457,83 @@ async def test_mongodb():
             "error": str(e)
         }
 
+@app.post("/api/test/populate")
+async def populate_sample_data():
+    """Populate MongoDB with sample data for Data Explorer visibility."""
+    if not MONGODB_AVAILABLE or not db_initialized:
+        return {
+            "status": "error",
+            "message": "MongoDB not available",
+            "mongodb_available": MONGODB_AVAILABLE,
+            "mongodb_connected": db_initialized
+        }
+    
+    try:
+        # Create sample runs
+        sample_runs = []
+        for i in range(3):
+            run_data = {
+                "id": f"sample-run-{i+1}-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+                "status": "completed",
+                "instrument_type": ["IRS", "CCS", "IRS"][i],
+                "currency": ["USD", "EUR", "GBP"][i],
+                "notional_amount": [1000000, 2000000, 1500000][i],
+                "as_of_date": datetime.now().strftime('%Y-%m-%d'),
+                "pv_base_ccy": [25000.50, 45000.75, 35000.25][i],
+                "spec": {
+                    "type": ["IRS", "CCS", "IRS"][i],
+                    "ccy": ["USD", "EUR", "GBP"][i],
+                    "notional": [1000000, 2000000, 1500000][i],
+                    "effective": datetime.now().strftime('%Y-%m-%d'),
+                    "maturity": (datetime.now() + timedelta(days=1825)).strftime('%Y-%m-%d'),
+                    "fixedRate": [4.25, 3.75, 4.50][i]
+                },
+                "metadata": {
+                    "source": "sample_data",
+                    "calculation_method": "enhanced_financial",
+                    "created_at": datetime.now().isoformat()
+                },
+                "created_at": datetime.now().isoformat()
+            }
+            
+            mongo_id = await mongodb_client.create_run(run_data)
+            run_data["_id"] = mongo_id
+            sample_runs.append(run_data)
+        
+        # Create sample curves
+        sample_curves = []
+        for currency in ["USD", "EUR", "GBP"]:
+            curve_data = {
+                "id": f"{currency}_OIS_{datetime.now().strftime('%Y-%m-%d')}",
+                "currency": currency,
+                "type": "OIS",
+                "as_of_date": datetime.now().strftime('%Y-%m-%d'),
+                "nodes": generate_realistic_rates(currency, 0.05),
+                "created_at": datetime.now().isoformat()
+            }
+            
+            mongo_id = await mongodb_client.create_curve(curve_data)
+            curve_data["_id"] = mongo_id
+            sample_curves.append(curve_data)
+        
+        # Get final database stats
+        stats = await mongodb_client.get_database_stats()
+        
+        return {
+            "status": "success",
+            "message": "Sample data created successfully",
+            "runs_created": len(sample_runs),
+            "curves_created": len(sample_curves),
+            "database_stats": stats,
+            "data_visible_in": "Azure Data Explorer - valuation-backend-server database"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to populate sample data: {str(e)}",
+            "error": str(e)
+        }
+
 # POC endpoints for advanced functionality
 
 @app.post("/poc/ifrs-ask")
