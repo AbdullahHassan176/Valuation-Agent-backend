@@ -11,11 +11,25 @@ import json
 import math
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
-from mongodb_client import mongodb_client
+
+# Try to import MongoDB client, fallback if not available
+try:
+    from mongodb_client import mongodb_client
+    MONGODB_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ MongoDB dependencies not available: {e}")
+    print("💡 Using fallback storage mode")
+    MONGODB_AVAILABLE = False
+    mongodb_client = None
 
 # Initialize MongoDB connection
 async def init_database():
     """Initialize MongoDB connection."""
+    if not MONGODB_AVAILABLE:
+        print("⚠️ MongoDB dependencies not available, using fallback mode")
+        print("💡 To enable MongoDB: Install pymongo and motor packages")
+        return False
+        
     try:
         # Check if MongoDB connection string is configured
         connection_string = os.getenv("MONGODB_CONNECTION_STRING")
@@ -149,6 +163,16 @@ def health():
 @app.get("/api/database/status")
 async def database_status():
     """Get database status and statistics."""
+    if not MONGODB_AVAILABLE:
+        return {
+            "database_type": "Fallback Mode (In-Memory)",
+            "database_name": "fallback_storage",
+            "total_runs": len(fallback_runs),
+            "total_curves": len(fallback_curves),
+            "recent_runs": fallback_runs[-5:] if fallback_runs else [],
+            "message": "MongoDB dependencies not available - using in-memory storage. Install pymongo and motor to enable MongoDB."
+        }
+    
     if not db_initialized:
         return {
             "database_type": "Fallback Mode (In-Memory)",
@@ -166,14 +190,14 @@ async def database_status():
         return {
             "database_type": "MongoDB (Azure Cosmos DB)",
             "status": "error",
-            "error": str(e)",
+            "error": str(e),
             "message": "Error retrieving database statistics"
         }
 
 @app.get("/api/valuation/runs")
 async def get_runs():
     """Get all valuation runs from MongoDB or fallback storage."""
-    if not db_initialized:
+    if not MONGODB_AVAILABLE or not db_initialized:
         # Return fallback runs
         return fallback_runs
     
@@ -187,7 +211,7 @@ async def get_runs():
 @app.post("/api/valuation/runs")
 async def create_run(request: dict = None):
     """Create a new valuation run in MongoDB or fallback storage."""
-    if not db_initialized:
+    if not MONGODB_AVAILABLE or not db_initialized:
         print("⚠️ MongoDB not available, using fallback storage")
     
     run_id = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
@@ -263,7 +287,7 @@ async def create_run(request: dict = None):
         }
     }
     
-    if db_initialized:
+    if MONGODB_AVAILABLE and db_initialized:
         try:
             # Insert into MongoDB
             mongo_id = await mongodb_client.create_run(run_data)
