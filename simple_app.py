@@ -18,8 +18,14 @@ import aiohttp
 try:
     from mongodb_client import mongodb_client
     MONGODB_AVAILABLE = True
+    print("✅ MongoDB client imported successfully")
 except ImportError as e:
     print(f"⚠️ MongoDB dependencies not available: {e}")
+    print("💡 Using fallback storage mode")
+    MONGODB_AVAILABLE = False
+    mongodb_client = None
+except Exception as e:
+    print(f"⚠️ MongoDB client error: {e}")
     print("💡 Using fallback storage mode")
     MONGODB_AVAILABLE = False
     mongodb_client = None
