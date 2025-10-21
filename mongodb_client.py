@@ -55,22 +55,22 @@ class MongoDBClient:
             conn_preview = self.connection_string[:50] + "..." if len(self.connection_string) > 50 else self.connection_string
             print(f"🔍 Connecting to MongoDB: {conn_preview}")
             
-                # For Azure Cosmos DB, use specific connection parameters
-                if "cosmos.azure.com" in self.connection_string or len(self.connection_string) > 100:
-                    print("🔍 Detected Azure Cosmos DB - using optimized connection parameters")
-                    try:
-                        # Try with minimal parameters first
-                        self.client = AsyncIOMotorClient(
-                            self.connection_string,
-                            serverSelectionTimeoutMS=30000,
-                            connectTimeoutMS=30000,
-                            socketTimeoutMS=30000,
-                            retryWrites=False,
-                            tls=True,
-                            directConnection=True,  # Try direct connection first
-                            maxPoolSize=1,
-                            minPoolSize=1
-                        )
+            # For Azure Cosmos DB, use specific connection parameters
+            if "cosmos.azure.com" in self.connection_string or len(self.connection_string) > 100:
+                print("🔍 Detected Azure Cosmos DB - using optimized connection parameters")
+                try:
+                    # Try with minimal parameters first
+                    self.client = AsyncIOMotorClient(
+                        self.connection_string,
+                        serverSelectionTimeoutMS=30000,
+                        connectTimeoutMS=30000,
+                        socketTimeoutMS=30000,
+                        retryWrites=False,
+                        tls=True,
+                        directConnection=True,  # Try direct connection first
+                        maxPoolSize=1,
+                        minPoolSize=1
+                    )
                 except UnicodeError as unicode_err:
                     print(f"❌ Unicode error with connection string: {unicode_err}")
                     print("🔍 Trying with URL encoding...")
