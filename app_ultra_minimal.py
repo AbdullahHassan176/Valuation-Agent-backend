@@ -1064,12 +1064,17 @@ async def test_mongodb_debug():
             "db_initialized": db_initialized,
             "mongodb_available": MONGODB_AVAILABLE,
             "connection_string_set": bool(MONGODB_CONNECTION_STRING),
-            "database_name": MONGODB_DATABASE
+            "database_name": MONGODB_DATABASE,
+            "connection_string_preview": MONGODB_CONNECTION_STRING[:50] + "..." if MONGODB_CONNECTION_STRING else "Not set"
         }
         
         if mongodb_client and db_initialized:
             # Test direct MongoDB operations
             try:
+                # Get actual database name being used
+                actual_db_name = mongodb_client.db.name
+                debug_info["actual_database_name"] = actual_db_name
+                
                 runs_count = await mongodb_client.db.runs.count_documents({})
                 debug_info["runs_count_direct"] = runs_count
                 
@@ -1081,6 +1086,10 @@ async def test_mongodb_debug():
                 runs_via_method = await mongodb_client.get_runs()
                 debug_info["runs_via_method"] = len(runs_via_method)
                 debug_info["runs_via_method_sample"] = runs_via_method[0] if runs_via_method else None
+                
+                # List all collections in the database
+                collections = await mongodb_client.db.list_collection_names()
+                debug_info["collections"] = collections
                 
             except Exception as e:
                 debug_info["mongodb_error"] = str(e)
