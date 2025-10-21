@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main entry point for Azure App Service - Ultra Minimal Mode
+Main entry point for Azure App Service - Working HTTP Server Mode
 """
 
 import os
@@ -11,39 +11,43 @@ from pathlib import Path
 current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 
-print(f"🔍 Starting ultra-minimal backend service from: {current_dir}")
+print(f"🔍 Starting working HTTP server from: {current_dir}")
 
-# Import and run the Ultra Minimal app with runs endpoints
+# Use the working HTTP server with intelligent chat responses
 try:
-    from app_ultra_minimal import app
-    print("✅ Ultra minimal app imported successfully")
+    from startup_working import ValuationHandler
+    from http.server import HTTPServer
+    import os
+    
+    print("✅ Working HTTP server imported successfully")
     
     if __name__ == "__main__":
-        import uvicorn
         port = int(os.environ.get("PORT", 8000))
-        print(f"🚀 Starting ultra-minimal backend on port {port}")
-        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+        print(f"🚀 Starting working HTTP server on port {port}")
+        
+        server = HTTPServer(('0.0.0.0', port), ValuationHandler)
+        print(f"✅ Server started successfully on port {port}")
+        server.serve_forever()
         
 except Exception as e:
-    print(f"❌ Error starting ultra-minimal app: {e}")
+    print(f"❌ Error starting working HTTP server: {e}")
     print(f"❌ Error type: {type(e).__name__}")
     import traceback
     print(f"❌ Traceback: {traceback.format_exc()}")
     
-    # Try QuantLib simple app as fallback
+    # Fallback to ultra minimal app
     try:
-        print("🔍 Trying QuantLib simple app as fallback...")
-        from app_quantlib_simple import app
-        print("✅ QuantLib simple app imported successfully")
+        from app_ultra_minimal import app
+        print("✅ Ultra minimal app imported successfully")
         
         if __name__ == "__main__":
             import uvicorn
             port = int(os.environ.get("PORT", 8000))
-            print(f"🚀 Starting minimal simple backend on port {port}")
+            print(f"🚀 Starting ultra-minimal backend on port {port}")
             uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
             
     except Exception as e2:
-        print(f"❌ Error starting minimal simple app: {e2}")
+        print(f"❌ Error starting ultra-minimal app: {e2}")
         print(f"❌ Error type: {type(e2).__name__}")
         
         # Absolute fallback - create basic app inline
