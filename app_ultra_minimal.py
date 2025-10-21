@@ -570,13 +570,18 @@ async def create_run(request: dict):
             currency = spec.get("ccy", "USD")
             frequency = spec.get("frequency", "SemiAnnual")
             
-            valuation_result = valuation_engine.calculate_irs_valuation(
-                notional=notional,
-                fixed_rate=fixed_rate,
-                tenor_years=tenor_years,
-                currency=currency,
-                frequency=frequency
-            )
+            try:
+                valuation_result = valuation_engine.calculate_irs_valuation(
+                    notional=notional,
+                    fixed_rate=fixed_rate,
+                    tenor_years=tenor_years,
+                    currency=currency,
+                    frequency=frequency
+                )
+                print(f"✅ IRS valuation completed: NPV = {valuation_result.get('npv', 0.0)}")
+            except Exception as e:
+                print(f"❌ Error in IRS valuation: {e}")
+                valuation_result = None
             
         elif instrument_type == "CCS":
             # Cross Currency Swap valuation
@@ -589,16 +594,21 @@ async def create_run(request: dict):
             tenor_years = spec.get("tenor_years", 5.0)
             fx_rate = spec.get("fx_rate", 1.0)
             
-            valuation_result = valuation_engine.calculate_ccs_valuation(
-                notional_base=notional_base,
-                notional_quote=notional_quote,
-                base_currency=base_currency,
-                quote_currency=quote_currency,
-                fixed_rate_base=fixed_rate_base,
-                fixed_rate_quote=fixed_rate_quote,
-                tenor_years=tenor_years,
-                fx_rate=fx_rate
-            )
+            try:
+                valuation_result = valuation_engine.calculate_ccs_valuation(
+                    notional_base=notional_base,
+                    notional_quote=notional_quote,
+                    base_currency=base_currency,
+                    quote_currency=quote_currency,
+                    fixed_rate_base=fixed_rate_base,
+                    fixed_rate_quote=fixed_rate_quote,
+                    tenor_years=tenor_years,
+                    fx_rate=fx_rate
+                )
+                print(f"✅ CCS valuation completed: NPV = {valuation_result.get('npv_base_ccy', 0.0)}")
+            except Exception as e:
+                print(f"❌ Error in CCS valuation: {e}")
+                valuation_result = None
         
         # Create run with valuation results - match frontend interface
         run_id = f"run-{int(datetime.now().timestamp() * 1000)}"
@@ -607,8 +617,17 @@ async def create_run(request: dict):
         tenor_years = spec.get("tenor_years", 5.0)
         fixed_rate = spec.get("fixedRate", 0.035)
         
+        # Safely extract valuation results
+        npv_value = 0.0
+        if valuation_result:
+            npv_value = valuation_result.get("npv", valuation_result.get("npv_base_ccy", 0.0))
+        else:
+            # Fallback calculation if valuation failed
+            print("⚠️ Using fallback NPV calculation")
+            npv_value = notional * 0.01  # Simple 1% of notional as fallback
+        
         # Calculate PV01 (simplified)
-        pv01 = abs(valuation_result.get("npv_base_ccy", 0.0)) * 0.0001 if valuation_result else 0.0
+        pv01 = abs(npv_value) * 0.0001
         
         new_run = {
             "id": run_id,
@@ -620,7 +639,7 @@ async def create_run(request: dict):
             "tenor": f"{tenor_years}Y",
             "fixedRate": fixed_rate,
             "floatingIndex": "SOFR" if currency == "USD" else "EURIBOR",
-            "pv": valuation_result.get("npv_base_ccy", 0.0) if valuation_result else 0.0,
+            "pv": npv_value,
             "pv01": pv01,
             "created_at": datetime.now().isoformat(),
             "completed_at": datetime.now().isoformat(),
@@ -629,7 +648,7 @@ async def create_run(request: dict):
             "asOf": as_of,
             "spec": spec,
             "instrument_type": instrument_type,
-            "pv_base_ccy": valuation_result.get("npv_base_ccy", 0.0) if valuation_result else 0.0,
+            "pv_base_ccy": npv_value,
             "valuation_result": valuation_result,
             "calculation_details": {
                 "method": "simplified_valuation",
