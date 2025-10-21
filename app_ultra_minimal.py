@@ -452,6 +452,7 @@ async def health():
 @app.get("/api/valuation/runs")
 async def get_runs():
     """Get all valuation runs."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             print("📊 Fetching runs from MongoDB...")
@@ -519,6 +520,7 @@ async def get_runs():
 @app.get("/api/valuation/runs/all")
 async def get_all_runs():
     """Get all runs for 'All Runs' tab."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             runs = await mongodb_client.get_runs()
@@ -534,6 +536,7 @@ async def get_all_runs():
 @app.get("/api/valuation/runs/my")
 async def get_my_runs():
     """Get user's runs for 'My Runs' tab."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             runs = await mongodb_client.get_runs()
@@ -550,6 +553,7 @@ async def get_my_runs():
 @app.get("/api/valuation/runs/recent")
 async def get_recent_runs():
     """Get recent runs for 'Recent' tab."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             runs = await mongodb_client.get_runs()
@@ -572,6 +576,7 @@ async def get_recent_runs():
 @app.get("/api/valuation/runs/archived")
 async def get_archived_runs():
     """Get archived runs for 'Archived' tab."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             runs = await mongodb_client.get_runs()
@@ -777,6 +782,7 @@ async def create_run(request: dict):
 @app.get("/api/valuation/curves")
 async def get_curves():
     """Get all yield curves."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             print("📈 Fetching curves from MongoDB...")
@@ -944,6 +950,7 @@ async def explain_run_endpoint(request: dict):
 @app.get("/api/database/status")
 async def get_database_status():
     """Get database status."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             print("📊 Getting MongoDB database status...")
@@ -998,6 +1005,7 @@ async def get_database_status():
 @app.get("/api/test/mongodb")
 async def test_mongodb():
     """Test MongoDB connection and create a test run."""
+    global db_initialized
     try:
         if not mongodb_client:
             return {
@@ -1057,6 +1065,7 @@ async def test_mongodb():
 @app.put("/api/valuation/runs/{run_id}/archive")
 async def archive_run(run_id: str):
     """Archive a run."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             # Update run status to archived
@@ -1083,6 +1092,7 @@ async def archive_run(run_id: str):
 @app.delete("/api/valuation/runs/{run_id}")
 async def delete_run(run_id: str):
     """Delete a run."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             result = await mongodb_client.db.runs.delete_one({"id": run_id})
@@ -1102,6 +1112,7 @@ async def delete_run(run_id: str):
 @app.put("/api/valuation/runs/{run_id}/restore")
 async def restore_run(run_id: str):
     """Restore an archived run."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             result = await mongodb_client.db.runs.update_one(
@@ -1128,6 +1139,7 @@ async def restore_run(run_id: str):
 @app.get("/api/valuation/runs/{run_id}/details")
 async def get_run_details(run_id: str):
     """Get detailed analysis for a specific run."""
+    global db_initialized
     try:
         # Find the run
         run_data = None
@@ -1174,6 +1186,7 @@ async def get_run_details(run_id: str):
 @app.get("/api/debug/runs")
 async def debug_runs():
     """Debug endpoint to see raw MongoDB data."""
+    global db_initialized
     try:
         if db_initialized and mongodb_client:
             runs = await mongodb_client.get_runs()
@@ -1325,6 +1338,7 @@ async def test_create_simple_run():
 @app.get("/api/test/mongodb-debug")
 async def test_mongodb_debug():
     """Debug MongoDB connection and operations."""
+    global db_initialized
     try:
         debug_info = {
             "mongodb_client_available": mongodb_client is not None,
