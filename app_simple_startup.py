@@ -32,8 +32,8 @@ fallback_runs = [
         "tenor": "5Y",
         "fixedRate": 0.035,
         "floatingIndex": "SOFR",
-        "pv": 100000.0,
-        "pv01": 1000.0,
+        "pv": -200000.0,  # Realistic negative PV (paying fixed at 3.5% when market is 4%)
+        "pv01": 4000.0,   # Realistic PV01
         "created_at": datetime.now().isoformat(),
         "completed_at": datetime.now().isoformat(),
         "progress": 100
@@ -75,9 +75,22 @@ async def create_run(request: dict):
         fixed_rate = spec.get("fixedRate", 0.035)
         instrument_type = spec.get("instrument_type", "IRS")
         
-        # Simple NPV calculation (1% of notional)
-        npv_value = notional * 0.01
-        pv01 = abs(npv_value) * 0.0001
+        # Realistic NPV calculation based on interest rate differential
+        # For an IRS, NPV = (Fixed Rate - Market Rate) * Notional * Duration
+        market_rate = 0.04  # Assume 4% market rate
+        
+        # Calculate realistic NPV
+        rate_diff = fixed_rate - market_rate
+        duration = tenor_years * 0.8  # Simplified duration
+        npv_value = rate_diff * notional * duration
+        
+        # Ensure NPV is reasonable (not more than 10% of notional)
+        max_npv = notional * 0.1
+        if abs(npv_value) > max_npv:
+            npv_value = max_npv if npv_value > 0 else -max_npv
+        
+        # Calculate PV01 (price value of 1 basis point)
+        pv01 = abs(notional * duration * 0.0001)
         
         # Create run
         run_id = f"run-{int(datetime.now().timestamp() * 1000)}"
