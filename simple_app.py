@@ -143,8 +143,101 @@ def generate_realistic_rates(currency: str, base_rate: float = 0.05) -> List[Dic
 db_initialized = False
 
 # Fallback in-memory storage for when MongoDB isn't available
-fallback_runs = []
-fallback_curves = []
+fallback_runs = [
+    {
+        "id": "sample-run-001",
+        "status": "completed",
+        "instrument_type": "IRS",
+        "currency": "USD",
+        "notional_amount": 1000000,
+        "as_of_date": "2024-01-15",
+        "pv_base_ccy": 25000.50,
+        "spec": {
+            "type": "IRS",
+            "ccy": "USD",
+            "notional": 1000000,
+            "effective": "2024-01-15",
+            "maturity": "2029-01-15",
+            "fixedRate": 4.25
+        },
+        "metadata": {
+            "source": "sample_data",
+            "calculation_method": "enhanced_financial",
+            "created_at": "2024-01-15T10:00:00Z"
+        },
+        "created_at": "2024-01-15T10:00:00Z"
+    },
+    {
+        "id": "sample-run-002", 
+        "status": "completed",
+        "instrument_type": "CCS",
+        "currency": "EUR",
+        "notional_amount": 2000000,
+        "as_of_date": "2024-01-15",
+        "pv_base_ccy": 45000.75,
+        "spec": {
+            "type": "CCS",
+            "ccy": "EUR",
+            "notional": 2000000,
+            "effective": "2024-01-15",
+            "maturity": "2027-01-15",
+            "fixedRate": 3.75
+        },
+        "metadata": {
+            "source": "sample_data",
+            "calculation_method": "enhanced_financial",
+            "created_at": "2024-01-15T11:00:00Z"
+        },
+        "created_at": "2024-01-15T11:00:00Z"
+    }
+]
+fallback_curves = [
+    {
+        "id": "USD_OIS_2024-01-15",
+        "currency": "USD",
+        "type": "OIS",
+        "as_of_date": "2024-01-15",
+        "nodes": [
+            {"tenor": "1M", "rate": 0.045},
+            {"tenor": "3M", "rate": 0.047},
+            {"tenor": "6M", "rate": 0.049},
+            {"tenor": "1Y", "rate": 0.052},
+            {"tenor": "2Y", "rate": 0.055},
+            {"tenor": "5Y", "rate": 0.058}
+        ],
+        "created_at": "2024-01-15T09:00:00Z"
+    },
+    {
+        "id": "EUR_OIS_2024-01-15",
+        "currency": "EUR", 
+        "type": "OIS",
+        "as_of_date": "2024-01-15",
+        "nodes": [
+            {"tenor": "1M", "rate": 0.035},
+            {"tenor": "3M", "rate": 0.037},
+            {"tenor": "6M", "rate": 0.039},
+            {"tenor": "1Y", "rate": 0.042},
+            {"tenor": "2Y", "rate": 0.045},
+            {"tenor": "5Y", "rate": 0.048}
+        ],
+        "created_at": "2024-01-15T09:00:00Z"
+    },
+    {
+        "id": "GBP_OIS_2024-01-15",
+        "currency": "GBP",
+        "type": "OIS", 
+        "as_of_date": "2024-01-15",
+        "nodes": [
+            {"tenor": "1M", "rate": 0.055},
+            {"tenor": "3M", "rate": 0.057},
+            {"tenor": "6M", "rate": 0.059},
+            {"tenor": "1Y", "rate": 0.062},
+            {"tenor": "2Y", "rate": 0.065},
+            {"tenor": "5Y", "rate": 0.068}
+        ],
+        "created_at": "2024-01-15T09:00:00Z"
+    }
+]
 
 # Create FastAPI app
 app = FastAPI(
