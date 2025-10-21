@@ -33,19 +33,40 @@ async def init_database():
     try:
         # Check if MongoDB connection string is configured
         connection_string = os.getenv("MONGODB_CONNECTION_STRING")
+        database_name = os.getenv("MONGODB_DATABASE", "valuation-backend-server")
+        
+        print(f"🔍 MongoDB connection string configured: {bool(connection_string)}")
+        print(f"🔍 Database name: {database_name}")
+        
         if not connection_string or connection_string == "mongodb://localhost:27017":
             print("⚠️ MongoDB connection string not configured, using fallback mode")
             print("💡 To enable MongoDB: Set MONGODB_CONNECTION_STRING environment variable")
             return False
-            
+        
+        # Set the database name in the client
+        mongodb_client.database_name = database_name
+        
+        print(f"🔍 Attempting to connect to MongoDB...")
         success = await mongodb_client.connect()
+        
         if success:
             print("✅ MongoDB connected successfully")
+            # Test the connection with a simple operation
+            try:
+                test_result = await mongodb_client.db.command("ping")
+                print(f"✅ MongoDB ping successful: {test_result}")
+            except Exception as ping_error:
+                print(f"⚠️ MongoDB ping failed: {ping_error}")
+                success = False
         else:
             print("❌ MongoDB connection failed, falling back to in-memory storage")
+        
         return success
     except Exception as e:
         print(f"❌ MongoDB initialization error: {e}")
+        print(f"❌ Error type: {type(e).__name__}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
         return False
 
 # Financial calculation functions
@@ -414,6 +435,31 @@ async def test_chat():
             "Health check",
             "Help system"
         ]
+    }
+
+@app.get("/api/test/mongodb-connection")
+async def test_mongodb_connection():
+    """Test MongoDB connection and return detailed status."""
+    if not MONGODB_AVAILABLE:
+        return {
+            "status": "error",
+            "message": "MongoDB dependencies not available",
+            "mongodb_available": False,
+            "connection_string_configured": False,
+            "database_initialized": False
+        }
+    
+    connection_string = os.getenv("MONGODB_CONNECTION_STRING")
+    database_name = os.getenv("MONGODB_DATABASE", "valuation-backend-server")
+    
+    return {
+        "status": "info",
+        "mongodb_available": True,
+        "connection_string_configured": bool(connection_string),
+        "database_name": database_name,
+        "database_initialized": db_initialized,
+        "connection_string_preview": connection_string[:20] + "..." if connection_string else "Not set",
+        "message": "MongoDB status check complete"
     }
 
 @app.post("/poc/chat")
