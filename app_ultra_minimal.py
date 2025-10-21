@@ -369,104 +369,69 @@ class ValuationEngine:
 # Initialize valuation engine
 valuation_engine = ValuationEngine()
 
-# File-based storage (fallback) - Format matches frontend interface
-FALLBACK_STORAGE_FILE = "fallback_storage.json"
+# In-memory storage (fallback) - Format matches frontend interface
+fallback_runs = [
+    {
+        "id": "run-001",
+        "name": "USD 5Y IRS",
+        "type": "IRS",
+        "status": "completed",
+        "notional": 10000000,
+        "currency": "USD",
+        "tenor": "5Y",
+        "fixedRate": 0.035,
+        "floatingIndex": "SOFR",
+        "pv": 125000.50,
+        "pv01": 2500.0,
+        "created_at": datetime.now().isoformat(),
+        "completed_at": datetime.now().isoformat(),
+        "progress": 100,
+        "asOf": "2024-01-15",
+        "spec": {
+            "ccy": "USD",
+            "notional": 10000000,
+            "fixedRate": 0.035,
+            "effective": "2024-01-01",
+            "maturity": "2029-01-01"
+        },
+        "pv_base_ccy": 125000.50
+    },
+    {
+        "id": "run-002", 
+        "name": "EUR 3Y IRS",
+        "type": "IRS",
+        "status": "completed",
+        "notional": 5000000,
+        "currency": "EUR",
+        "tenor": "3Y",
+        "fixedRate": 0.025,
+        "floatingIndex": "EURIBOR",
+        "pv": -75000.25,
+        "pv01": 1500.0,
+        "created_at": datetime.now().isoformat(),
+        "completed_at": datetime.now().isoformat(),
+        "progress": 100,
+        "asOf": "2024-01-15",
+        "spec": {
+            "ccy": "EUR",
+            "notional": 5000000,
+            "fixedRate": 0.025,
+            "effective": "2024-01-01",
+            "maturity": "2027-01-01"
+        },
+        "pv_base_ccy": -75000.25
+    }
+]
 
-def load_fallback_storage():
-    """Load fallback storage from file."""
-    try:
-        if os.path.exists(FALLBACK_STORAGE_FILE):
-            with open(FALLBACK_STORAGE_FILE, 'r') as f:
-                data = json.load(f)
-                return data.get("runs", []), data.get("curves", [])
-        else:
-            # Initialize with sample data
-            sample_runs = [
-                {
-                    "id": "run-001",
-                    "name": "USD 5Y IRS",
-                    "type": "IRS",
-                    "status": "completed",
-                    "notional": 10000000,
-                    "currency": "USD",
-                    "tenor": "5Y",
-                    "fixedRate": 0.035,
-                    "floatingIndex": "SOFR",
-                    "pv": 125000.50,
-                    "pv01": 2500.0,
-                    "created_at": datetime.now().isoformat(),
-                    "completed_at": datetime.now().isoformat(),
-                    "progress": 100,
-                    "asOf": "2024-01-15",
-                    "spec": {
-                        "ccy": "USD",
-                        "notional": 10000000,
-                        "fixedRate": 0.035,
-                        "effective": "2024-01-01",
-                        "maturity": "2029-01-01"
-                    },
-                    "pv_base_ccy": 125000.50
-                },
-                {
-                    "id": "run-002", 
-                    "name": "EUR 3Y IRS",
-                    "type": "IRS",
-                    "status": "completed",
-                    "notional": 5000000,
-                    "currency": "EUR",
-                    "tenor": "3Y",
-                    "fixedRate": 0.025,
-                    "floatingIndex": "EURIBOR",
-                    "pv": -75000.25,
-                    "pv01": 1500.0,
-                    "created_at": datetime.now().isoformat(),
-                    "completed_at": datetime.now().isoformat(),
-                    "progress": 100,
-                    "asOf": "2024-01-15",
-                    "spec": {
-                        "ccy": "EUR",
-                        "notional": 5000000,
-                        "fixedRate": 0.025,
-                        "effective": "2024-01-01",
-                        "maturity": "2027-01-01"
-                    },
-                    "pv_base_ccy": -75000.25
-                }
-            ]
-            
-            sample_curves = [
-                {
-                    "id": "curve-001",
-                    "currency": "USD",
-                    "rates": [0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05],
-                    "tenors": [0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 30.0],
-                    "created_at": datetime.now().isoformat()
-                }
-            ]
-            
-            # Save initial data
-            save_fallback_storage(sample_runs, sample_curves)
-            return sample_runs, sample_curves
-    except Exception as e:
-        print(f"❌ Error loading fallback storage: {e}")
-        return [], []
-
-def save_fallback_storage(runs, curves):
-    """Save fallback storage to file."""
-    try:
-        data = {
-            "runs": runs,
-            "curves": curves,
-            "last_updated": datetime.now().isoformat()
-        }
-        with open(FALLBACK_STORAGE_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
-        print(f"✅ Fallback storage saved: {len(runs)} runs, {len(curves)} curves")
-    except Exception as e:
-        print(f"❌ Error saving fallback storage: {e}")
-
-# Load fallback storage
-fallback_runs, fallback_curves = load_fallback_storage()
+fallback_curves = [
+    {
+        "id": "curve-001",
+        "currency": "USD",
+        "rates": [0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05],
+        "tenors": [0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 30.0],
+        "created_at": datetime.now().isoformat()
+    }
+]
 
 # Root endpoint
 @app.get("/")
@@ -811,8 +776,6 @@ async def create_run(request: dict):
         if new_run not in fallback_runs:
             fallback_runs.append(new_run)
             print(f"✅ Run added to fallback storage: {new_run['id']}")
-            # Save to file
-            save_fallback_storage(fallback_runs, fallback_curves)
         
         print(f"✅ Run creation completed successfully: {new_run['id']}")
         
@@ -1149,7 +1112,6 @@ async def archive_run(run_id: str):
                 if run.get("id") == run_id:
                     run["status"] = "archived"
                     run["archived_at"] = datetime.now().isoformat()
-                    save_fallback_storage(fallback_runs, fallback_curves)
                     return {"success": True, "message": "Run archived successfully"}
             return {"success": False, "message": "Run not found"}
     except Exception as e:
@@ -1171,7 +1133,6 @@ async def delete_run(run_id: str):
             # Remove from fallback storage
             global fallback_runs
             fallback_runs = [run for run in fallback_runs if run.get("id") != run_id]
-            save_fallback_storage(fallback_runs, fallback_curves)
             return {"success": True, "message": "Run deleted successfully"}
     except Exception as e:
         print(f"❌ Error deleting run: {e}")
@@ -1197,7 +1158,6 @@ async def restore_run(run_id: str):
                 if run.get("id") == run_id:
                     run["status"] = "completed"
                     run["restored_at"] = datetime.now().isoformat()
-                    save_fallback_storage(fallback_runs, fallback_curves)
                     return {"success": True, "message": "Run restored successfully"}
             return {"success": False, "message": "Run not found"}
     except Exception as e:
