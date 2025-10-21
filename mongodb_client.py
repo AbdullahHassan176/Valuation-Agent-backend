@@ -23,6 +23,31 @@ class MongoDBClient:
         self.client = None
         self.db = None
         
+        # Validate connection string
+        self._validate_connection_string()
+    
+    def _validate_connection_string(self):
+        """Validate and potentially fix the connection string."""
+        if not self.connection_string:
+            print("❌ No MongoDB connection string provided")
+            return False
+            
+        # Check for common issues
+        if len(self.connection_string) > 200:
+            print(f"⚠️ Connection string is very long ({len(self.connection_string)} chars)")
+            
+        # Check for special characters that might cause issues
+        if any(char in self.connection_string for char in ['<', '>', '"', "'", '&']):
+            print("⚠️ Connection string contains special characters that might cause issues")
+            
+        # Check if it's a valid MongoDB URI format
+        if not self.connection_string.startswith(('mongodb://', 'mongodb+srv://')):
+            print("❌ Connection string doesn't start with mongodb:// or mongodb+srv://")
+            return False
+            
+        print(f"✅ Connection string format looks valid (length: {len(self.connection_string)})")
+        return True
+        
     async def connect(self):
         """Connect to MongoDB."""
         try:
@@ -30,23 +55,22 @@ class MongoDBClient:
             conn_preview = self.connection_string[:50] + "..." if len(self.connection_string) > 50 else self.connection_string
             print(f"🔍 Connecting to MongoDB: {conn_preview}")
             
-            # For Azure Cosmos DB, use specific connection parameters
-            if "cosmos.azure.com" in self.connection_string or len(self.connection_string) > 100:
-                print("🔍 Detected Azure Cosmos DB - using optimized connection parameters")
-                try:
-                    self.client = AsyncIOMotorClient(
-                        self.connection_string,
-                        serverSelectionTimeoutMS=30000,  # 30 second timeout for Cosmos DB
-                        connectTimeoutMS=30000,
-                        socketTimeoutMS=30000,
-                        retryWrites=False,  # Disable retry writes for Cosmos DB
-                        tls=True,  # Enable TLS for Cosmos DB
-                        tlsAllowInvalidCertificates=False,
-                        tlsAllowInvalidHostnames=False,
-                        directConnection=False,  # Use replica set mode
-                        maxPoolSize=10,
-                        minPoolSize=1
-                    )
+                # For Azure Cosmos DB, use specific connection parameters
+                if "cosmos.azure.com" in self.connection_string or len(self.connection_string) > 100:
+                    print("🔍 Detected Azure Cosmos DB - using optimized connection parameters")
+                    try:
+                        # Try with minimal parameters first
+                        self.client = AsyncIOMotorClient(
+                            self.connection_string,
+                            serverSelectionTimeoutMS=30000,
+                            connectTimeoutMS=30000,
+                            socketTimeoutMS=30000,
+                            retryWrites=False,
+                            tls=True,
+                            directConnection=True,  # Try direct connection first
+                            maxPoolSize=1,
+                            minPoolSize=1
+                        )
                 except UnicodeError as unicode_err:
                     print(f"❌ Unicode error with connection string: {unicode_err}")
                     print("🔍 Trying with URL encoding...")
