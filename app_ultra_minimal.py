@@ -452,7 +452,7 @@ async def health():
 @app.get("/api/valuation/runs")
 async def get_runs():
     """Get all valuation runs."""
-    global db_initialized, fallback_runs
+    global db_initialized, fallback_runs, mongodb_client
     try:
         print(f"🔍 get_runs called - db_initialized: {db_initialized}, mongodb_client: {mongodb_client is not None}")
         print(f"🔍 fallback_runs count: {len(fallback_runs)}")
@@ -518,7 +518,15 @@ async def get_runs():
             return transformed_runs
     except Exception as e:
         print(f"❌ Error getting runs: {e}")
-        return fallback_runs
+        print(f"❌ Error type: {type(e).__name__}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        # Return fallback runs even if there's an error
+        try:
+            return fallback_runs
+        except Exception as fallback_error:
+            print(f"❌ Fallback error: {fallback_error}")
+            return []
 
 @app.get("/api/valuation/runs/all")
 async def get_all_runs():
