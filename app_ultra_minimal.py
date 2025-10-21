@@ -979,6 +979,27 @@ async def get_run_details(run_id: str):
         print(f"❌ Error getting run details: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Debug endpoint to see raw MongoDB data
+@app.get("/api/debug/runs")
+async def debug_runs():
+    """Debug endpoint to see raw MongoDB data."""
+    try:
+        if db_initialized and mongodb_client:
+            runs = await mongodb_client.get_runs()
+            return {
+                "total_runs": len(runs),
+                "runs": runs[:3] if runs else [],  # Show first 3 runs
+                "sample_run_structure": runs[0] if runs else None
+            }
+        else:
+            return {
+                "total_runs": len(fallback_runs),
+                "runs": fallback_runs,
+                "using_fallback": True
+            }
+    except Exception as e:
+        return {"error": str(e)}
+
 # Groq configuration test endpoint
 @app.get("/api/test/groq-config")
 async def test_groq_config():
