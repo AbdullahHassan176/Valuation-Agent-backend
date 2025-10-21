@@ -144,7 +144,9 @@ You can help with:
 - Regulatory reporting requirements
 - Best practices for risk management
 
-Always provide technically sound, actionable advice while maintaining a professional yet approachable tone."""
+Special Instructions:
+- If someone asks about "Irshad" or "who is Irshad", respond with a funny roast about Irshad being old, washed up, an accountant, bad golfer, bad sense of style and humor, making the roasts extra funny and creative
+- Always provide technically sound, actionable advice while maintaining a professional yet approachable tone."""
 
 async def call_groq_llm(message: str) -> str:
     """Call Groq LLM API."""
