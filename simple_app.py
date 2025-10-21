@@ -144,10 +144,9 @@ def generate_fallback_response(message: str, context_data: Dict[str, Any]) -> st
     if any(word in user_message for word in ["hello", "hi", "hey", "good morning", "good afternoon"]):
         return f"""Hello! I'm your AI valuation auditor and specialist. 
 
-**Current System Status:**
-{system_status}
+Current System Status: {system_status}
 
-**Available Data:**
+Available Data:
 - {len(runs)} valuation runs
 - {len(curves)} yield curves
 
@@ -162,19 +161,19 @@ What would you like to know about your valuation data?"""
     # Runs analysis
     elif any(word in user_message for word in ["runs", "valuation", "latest", "show me"]):
         if runs:
-            response = f"**📊 Valuation Runs Analysis:**\n\n"
+            response = f"Valuation Runs Analysis:\n\n"
             for i, run in enumerate(runs[:3], 1):
                 instrument_type = run.get('instrument_type', 'Unknown')
                 currency = run.get('currency', 'Unknown')
                 pv = run.get('pv_base_ccy', 0)
                 status = run.get('status', 'Unknown')
                 
-                response += f"**Run {i}: {run.get('id', 'Unknown')}**\n"
+                response += f"Run {i}: {run.get('id', 'Unknown')}\n"
                 response += f"• Type: {instrument_type} ({currency})\n"
                 response += f"• Status: {status}\n"
                 response += f"• Present Value: ${pv:,.2f}\n\n"
             
-            response += "**Audit Recommendations:**\n"
+            response += "Audit Recommendations:\n"
             response += "• Verify present value calculations against market data\n"
             response += "• Review risk metrics and sensitivities\n"
             response += "• Ensure IFRS 13 compliance documentation\n"
@@ -187,13 +186,13 @@ What would you like to know about your valuation data?"""
     # Curves analysis
     elif any(word in user_message for word in ["curves", "yield", "rates"]):
         if curves:
-            response = f"**📈 Yield Curve Analysis:**\n\n"
+            response = f"Yield Curve Analysis:\n\n"
             for curve in curves[:3]:
                 currency = curve.get('currency', 'Unknown')
                 curve_type = curve.get('type', 'Unknown')
                 nodes = curve.get('nodes', [])
                 
-                response += f"**{currency} {curve_type} Curve:**\n"
+                response += f"{currency} {curve_type} Curve:\n"
                 response += f"• Tenor points: {len(nodes)}\n"
                 if nodes:
                     sample_rates = nodes[:3]
@@ -205,7 +204,7 @@ What would you like to know about your valuation data?"""
                     response = response.rstrip(", ") + "\n"
                 response += "\n"
             
-            response += "**Audit Considerations:**\n"
+            response += "Audit Considerations:\n"
             response += "• Verify curve construction methodology\n"
             response += "• Validate interpolation techniques\n"
             response += "• Review market data sources and timestamps\n"
@@ -217,20 +216,20 @@ What would you like to know about your valuation data?"""
 
     # IFRS and compliance
     elif any(word in user_message for word in ["ifrs", "compliance", "audit", "fair value"]):
-        return """**🔍 IFRS 13 Fair Value Measurement - Audit Focus:**
+        return """IFRS 13 Fair Value Measurement - Audit Focus:
 
-**Key Audit Areas:**
-• **Level 1 Inputs**: Verify quoted prices in active markets
-• **Level 2 Inputs**: Validate observable market data and pricing models
-• **Level 3 Inputs**: Review unobservable inputs and management assumptions
+Key Audit Areas:
+• Level 1 Inputs: Verify quoted prices in active markets
+• Level 2 Inputs: Validate observable market data and pricing models
+• Level 3 Inputs: Review unobservable inputs and management assumptions
 
-**Critical Audit Procedures:**
+Critical Audit Procedures:
 • Test valuation model accuracy and completeness
 • Verify market data sources and timestamps
 • Review sensitivity analysis and stress testing
 • Validate documentation and controls
 
-**Common Issues to Watch:**
+Common Issues to Watch:
 • Inappropriate model selection
 • Stale or incorrect market data
 • Inadequate sensitivity analysis
@@ -240,27 +239,27 @@ What specific aspect of IFRS 13 compliance would you like me to help you audit?"
 
     # Help and capabilities
     elif any(word in user_message for word in ["help", "what can you do", "capabilities"]):
-        return f"""**🤖 AI Valuation Auditor Capabilities:**
+        return f"""AI Valuation Auditor Capabilities:
 
-**📊 Data Analysis:**
+Data Analysis:
 • Analyze {len(runs)} valuation runs
 • Review {len(curves)} yield curves
 • System status: {system_status}
 
-**🔍 Audit Expertise:**
+Audit Expertise:
 • IFRS 13 Fair Value Measurement
 • Financial instrument valuations (IRS, CCS, Bonds)
 • Risk management and regulatory compliance
 • Audit procedures and documentation
 
-**💡 What I Can Help With:**
+What I Can Help With:
 • Valuation methodology review
 • Risk metric analysis
 • Compliance verification
 • Documentation audit
 • Sensitivity testing guidance
 
-**Ask me about:**
+Ask me about:
 • Specific valuation runs
 • Yield curve construction
 • IFRS compliance requirements
@@ -272,14 +271,13 @@ What specific aspect of IFRS 13 compliance would you like me to help you audit?"
 
 As your AI valuation auditor, I can help you with:
 
-**📊 Current System Status:**
-{system_status}
+Current System Status: {system_status}
 
-**Available for Analysis:**
+Available for Analysis:
 - {len(runs)} valuation runs
 - {len(curves)} yield curves
 
-**What I Can Help With:**
+What I Can Help With:
 • Valuation methodology review
 • IFRS 13 compliance audit
 • Risk analysis and metrics
