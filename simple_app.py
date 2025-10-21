@@ -46,64 +46,42 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 USE_GROQ = os.getenv("USE_GROQ", "false").lower() == "true"
 
 # System prompt for the AI valuation auditor
-SYSTEM_PROMPT = """You are an expert AI Valuation Auditor and Financial Risk Specialist with deep expertise in:
-
-**Core Competencies:**
-- IFRS 13 Fair Value Measurement
-- Financial instrument valuation (IRS, CCS, Bonds, Derivatives)
-- Risk management and regulatory compliance
-- Audit procedures and documentation
-- Market data analysis and curve construction
-- Sensitivity analysis and stress testing
-- XVA calculations (CVA, DVA, FVA, KVA, MVA)
-- Credit risk assessment and counterparty analysis
+SYSTEM_PROMPT = """You are a friendly AI valuation assistant with expertise in financial analysis and IFRS compliance.
 
 **Your Role:**
-- Act as a senior valuation auditor and risk specialist
-- Provide expert analysis and recommendations
-- Ensure compliance with IFRS and regulatory standards
-- Guide through complex valuation methodologies
-- Audit valuation processes and controls
-- Train and mentor junior auditors
-- Develop audit methodologies and best practices
+- Help users with valuation questions and analysis
+- Provide clear, concise explanations
+- Be conversational and approachable
+- Focus on what the user actually needs
 
 **Communication Style:**
-- Professional, authoritative, yet approachable
-- Use technical terminology appropriately
-- Provide detailed explanations with examples
-- Ask clarifying questions when needed
-- Offer actionable recommendations
-- Be conversational and engaging while maintaining expertise
+- Be conversational and friendly
+- Keep responses concise and focused
+- Ask one question at a time
+- Avoid information dumps
+- Use simple language when possible
+- Be helpful but not overwhelming
 
 **Available Data:**
 - Valuation runs and their results
 - Yield curves and market data
-- Risk metrics and sensitivities
-- System health and performance
+- System status
 
-**Training Focus:**
-- You are being trained to be an expert AI auditor
-- Learn from each interaction to improve your responses
-- Adapt your communication style to the user's needs
-- Provide increasingly sophisticated analysis over time
+**Response Guidelines:**
+- Keep responses under 3-4 sentences unless specifically asked for details
+- Ask one clarifying question at a time
+- Don't list all capabilities unless asked
+- Focus on the user's specific question
+- Be conversational, not formal
+- Avoid bullet points and long lists unless necessary
 
-**AI Agent Capabilities:**
-- EXPLAIN: Analyze and interpret valuation results, risk metrics, and methodologies
-- EXECUTE: Create new valuations, run sensitivity analysis, generate scenarios
-- EDUCATE: Explain IFRS 13, regulatory compliance, audit procedures
-- GUIDE: Walk users through complex financial processes step-by-step
-- VALIDATE: Check results for reasonableness and compliance
-- DOCUMENT: Generate audit documentation and compliance reports
+**Example Good Response:**
+"I can help you analyze those valuation runs. What specific aspect would you like to focus on - the present values, risk metrics, or something else?"
 
-**Agent Behavior:**
-- Be proactive in suggesting next steps
-- Ask clarifying questions when needed
-- Provide actionable recommendations
-- Offer to create new analyses or scenarios
-- Explain complex concepts in simple terms
-- Always maintain professional audit standards
+**Example Bad Response:**
+"I have extensive capabilities in valuation calculations, risk analysis, audit procedures, regulatory compliance, market data analysis, sensitivity analysis, XVA calculations, credit risk assessment, and counterparty analysis. I can perform calculations for various financial instruments including Interest Rate Swaps, Credit Default Swaps, Bonds, Derivatives, and other complex financial instruments..."
 
-Always maintain audit-quality standards and provide thorough, well-reasoned responses."""
+Be helpful, concise, and conversational."""
 
 # Ollama Client for free LLM responses
 async def call_ollama(user_message: str, context_data: Dict[str, Any] = None) -> str:
@@ -328,250 +306,48 @@ def generate_fallback_response(message: str, context_data: Dict[str, Any]) -> st
     
     # Greeting responses
     if any(word in user_message for word in ["hello", "hi", "hey", "good morning", "good afternoon"]):
-        return f"""Hello! I'm your AI valuation auditor and specialist. 
-
-Current System Status: {system_status}
-
-Available Data:
-- {len(runs)} valuation runs
-- {len(curves)} yield curves
-
-I can help you with:
-• Analyzing valuation runs and methodologies
-• IFRS 13 compliance and audit procedures  
-• Risk analysis and sensitivity testing
-• Yield curve construction and validation
-
-What would you like to know about your valuation data?"""
+        return f"Hi there! I'm your valuation assistant. I can see you have {len(runs)} valuation runs and {len(curves)} yield curves available. What would you like to work on today?"
 
     # Create new valuation run
     elif any(word in user_message for word in ["create", "new", "irs", "swap", "valuation run"]):
-        return """Creating a New IRS Valuation Run - Audit Guidance:
-
-IRS Valuation Process:
-1. Instrument Specification:
-   • Notional amount and currency
-   • Fixed rate and floating rate index
-   • Effective and maturity dates
-   • Payment frequency and day count convention
-
-2. Market Data Requirements:
-   • Yield curve for discounting
-   • Forward rate curve for floating leg
-   • Credit spreads for CVA calculation
-   • FX rates for cross-currency swaps
-
-3. Valuation Methodology:
-   • Present value calculation using yield curves
-   • Risk metrics (duration, convexity, DV01)
-   • Sensitivity analysis (parallel shifts, curve twists)
-   • XVA adjustments (CVA, DVA, FVA)
-
-4. Audit Considerations:
-   • Verify market data sources and timestamps
-   • Test valuation model accuracy
-   • Review risk calculation methodology
-   • Ensure regulatory compliance
-
-To create a new run, go to the main page and click 'Create New Run'. I can help you with the analysis once you have the valuation results.
-
-What specific aspect of IRS valuation would you like me to help you with?"""
+        return "I can help you create a new valuation run. What type of instrument are you looking to value?"
 
     # Runs analysis
     elif any(word in user_message for word in ["runs", "valuation", "latest", "show me"]):
         if runs:
-            response = f"Valuation Runs Analysis:\n\n"
-            for i, run in enumerate(runs[:3], 1):
-                instrument_type = run.get('instrument_type', 'Unknown')
-                currency = run.get('currency', 'Unknown')
-                pv = run.get('pv_base_ccy', 0)
-                status = run.get('status', 'Unknown')
-                
-                response += f"Run {i}: {run.get('id', 'Unknown')}\n"
-                response += f"• Type: {instrument_type} ({currency})\n"
-                response += f"• Status: {status}\n"
-                response += f"• Present Value: ${pv:,.2f}\n\n"
-            
-            response += "Audit Recommendations:\n"
-            response += "• Verify present value calculations against market data\n"
-            response += "• Review risk metrics and sensitivities\n"
-            response += "• Ensure IFRS 13 compliance documentation\n"
-            response += "• Validate curve interpolation methodology"
-            
-            return response
+            return f"I can see you have {len(runs)} valuation runs. What specific aspect would you like me to analyze?"
         else:
-            return "No valuation runs found. I can help you create and analyze new valuations once you have data."
+            return "No valuation runs found. I can help you create new ones if you'd like."
 
     # Curves analysis
     elif any(word in user_message for word in ["curves", "yield", "rates"]):
         if curves:
-            response = f"Yield Curve Analysis:\n\n"
-            for curve in curves[:3]:
-                currency = curve.get('currency', 'Unknown')
-                curve_type = curve.get('type', 'Unknown')
-                nodes = curve.get('nodes', [])
-                
-                response += f"{currency} {curve_type} Curve:\n"
-                response += f"• Tenor points: {len(nodes)}\n"
-                if nodes:
-                    sample_rates = nodes[:3]
-                    response += f"• Sample rates: "
-                    for node in sample_rates:
-                        tenor = node.get('tenor', 'N/A')
-                        rate = node.get('rate', 0)
-                        response += f"{tenor} {rate:.3%}, "
-                    response = response.rstrip(", ") + "\n"
-                response += "\n"
-            
-            response += "Audit Considerations:\n"
-            response += "• Verify curve construction methodology\n"
-            response += "• Validate interpolation techniques\n"
-            response += "• Review market data sources and timestamps\n"
-            response += "• Check for curve smoothness and arbitrage-free conditions"
-            
-            return response
+            return f"You have {len(curves)} yield curves available. What would you like to know about them?"
         else:
-            return "No yield curves available. I can help you construct and validate curves once you have market data."
+            return "No yield curves available. I can help you work with them once you have data."
 
     # IFRS and compliance
     elif any(word in user_message for word in ["ifrs", "compliance", "audit", "fair value"]):
-        return """IFRS 13 Fair Value Measurement - Audit Focus:
-
-Key Audit Areas:
-• Level 1 Inputs: Verify quoted prices in active markets
-• Level 2 Inputs: Validate observable market data and pricing models
-• Level 3 Inputs: Review unobservable inputs and management assumptions
-
-Critical Audit Procedures:
-• Test valuation model accuracy and completeness
-• Verify market data sources and timestamps
-• Review sensitivity analysis and stress testing
-• Validate documentation and controls
-
-Common Issues to Watch:
-• Inappropriate model selection
-• Stale or incorrect market data
-• Inadequate sensitivity analysis
-• Poor documentation of assumptions
-
-What specific aspect of IFRS 13 compliance would you like me to help you audit?"""
+        return "I can help with IFRS 13 compliance questions. What specific area are you working on?"
 
     # Help and capabilities
     elif any(word in user_message for word in ["help", "what can you do", "capabilities", "what cna you do"]):
-        return f"""AI Valuation Auditor Capabilities:
-
-Data Analysis:
-• Analyze {len(runs)} valuation runs
-• Review {len(curves)} yield curves
-• System status: {system_status}
-
-Audit Expertise:
-• IFRS 13 Fair Value Measurement
-• Financial instrument valuations (IRS, CCS, Bonds)
-• Risk management and regulatory compliance
-• Audit procedures and documentation
-• XVA calculations (CVA, DVA, FVA, KVA, MVA)
-
-What I Can Help With:
-• Valuation methodology review
-• Risk metric analysis
-• Compliance verification
-• Documentation audit
-• Sensitivity testing guidance
-• XVA and credit risk analysis
-
-Ask me about:
-• Specific valuation runs
-• Yield curve construction
-• IFRS compliance requirements
-• Risk analysis techniques
-• CVA, XVA, and credit risk adjustments"""
+        return f"I can help you analyze your {len(runs)} valuation runs and {len(curves)} yield curves. What would you like to focus on?"
 
     # Credit Valuation Adjustment (CVA)
     elif any(word in user_message for word in ["cva", "credit valuation adjustment", "credit risk", "counterparty risk"]):
-        return """Credit Valuation Adjustment (CVA) - Audit Focus:
-
-CVA Definition:
-CVA is the difference between the risk-free portfolio value and the true portfolio value that takes into account the possibility of counterparty default.
-
-Key CVA Components:
-• Probability of Default (PD) - likelihood of counterparty default
-• Loss Given Default (LGD) - percentage loss if default occurs
-• Exposure at Default (EAD) - exposure amount at time of default
-• Recovery Rate - percentage recovered after default
-
-CVA Calculation Methodology:
-• Monte Carlo simulation for exposure paths
-• Credit spread curves for default probabilities
-• Correlation between credit and market risk factors
-• Wrong-way risk considerations
-
-Audit Procedures for CVA:
-• Verify counterparty credit ratings and spreads
-• Test exposure calculation methodology
-• Review correlation assumptions
-• Validate stress testing scenarios
-• Check regulatory capital calculations
-
-Common CVA Issues:
-• Inadequate credit data quality
-• Poor correlation modeling
-• Insufficient stress testing
-• Regulatory compliance gaps
-
-Would you like me to help you audit specific CVA calculations or methodologies?"""
+        return "I can help with CVA analysis. What specific aspect of credit valuation adjustments are you working on?"
 
     # XVA (Cross Valuation Adjustments)
     elif any(word in user_message for word in ["xva", "fva", "kva", "mva", "valuation adjustment"]):
-        return """XVA (Cross Valuation Adjustments) - Comprehensive Overview:
+        return "I can help with XVA analysis. Which adjustment are you working on - CVA, DVA, FVA, or something else?"
 
-XVA Components:
-• CVA (Credit Valuation Adjustment) - counterparty credit risk
-• DVA (Debit Valuation Adjustment) - own credit risk
-• FVA (Funding Valuation Adjustment) - funding cost impact
-• KVA (Capital Valuation Adjustment) - regulatory capital cost
-• MVA (Margin Valuation Adjustment) - initial margin cost
+    # System health and status
+    elif any(word in user_message for word in ["health", "status", "system", "fallback"]):
+        return f"System is in {system_status} with {len(runs)} runs and {len(curves)} curves. What would you like to check?"
 
-XVA Integration:
-• Total XVA = CVA + DVA + FVA + KVA + MVA
-• Netting and collateral considerations
-• Regulatory capital requirements
-• Accounting treatment (IFRS 13)
-
-Audit Focus Areas:
-• Model validation and backtesting
-• Data quality and completeness
-• Regulatory compliance (Basel III, CVA capital)
-• Stress testing and scenario analysis
-• Documentation and governance
-
-Implementation Challenges:
-• Model complexity and computational requirements
-• Data availability and quality
-• Regulatory reporting requirements
-• System integration and controls
-
-Would you like me to help you with specific XVA components or audit procedures?"""
-
-    # Default response
     else:
-        return f"""I understand you're asking about "{message}". 
-
-As your AI valuation auditor, I can help you with:
-
-Current System Status: {system_status}
-
-Available for Analysis:
-- {len(runs)} valuation runs
-- {len(curves)} yield curves
-
-What I Can Help With:
-• Valuation methodology review
-• IFRS 13 compliance audit
-• Risk analysis and metrics
-• Documentation verification
-
-Could you be more specific about what you'd like me to analyze or audit?"""
+        return f"I can help you with your valuation analysis. You have {len(runs)} runs and {len(curves)} curves available. What would you like to focus on?"
 
 # Initialize MongoDB connection
 async def init_database():
