@@ -38,15 +38,11 @@ async def startup_event():
     """Initialize database on startup."""
     global db_initialized
     try:
-        if mongodb_client:
-            print("🔍 Initializing MongoDB connection...")
-            db_initialized = await mongodb_client.connect()
-            if db_initialized:
-                print("✅ MongoDB database initialized successfully")
-            else:
-                print("⚠️ MongoDB connection failed - using fallback storage")
-        else:
-            print("⚠️ MongoDB not configured - using fallback storage")
+        print("🔍 Starting backend initialization...")
+        # Skip MongoDB initialization during startup to avoid timeout
+        print("⚠️ Skipping MongoDB initialization during startup - will connect on demand")
+        db_initialized = False
+        print("✅ Backend startup completed - using fallback storage")
     except Exception as e:
         print(f"❌ Database initialization error: {e}")
         db_initialized = False
@@ -694,6 +690,19 @@ async def create_run(request: dict):
         }
         
         print(f"🔍 Attempting to store run: {new_run}")
+        
+        # Try MongoDB connection on demand
+        if mongodb_client and not db_initialized:
+            print("🔍 Attempting MongoDB connection on demand...")
+            try:
+                db_initialized = await mongodb_client.connect()
+                if db_initialized:
+                    print("✅ MongoDB connected successfully")
+                else:
+                    print("⚠️ MongoDB connection failed")
+            except Exception as e:
+                print(f"❌ MongoDB connection error: {e}")
+                db_initialized = False
         
         if db_initialized and mongodb_client:
             print("💾 Storing run in MongoDB...")
