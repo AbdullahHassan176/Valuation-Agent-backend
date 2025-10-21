@@ -143,3 +143,4 @@ You can easily switch between:
 - Hugging Face (cloud, free)
 
 Just change the environment variables in Azure!
+

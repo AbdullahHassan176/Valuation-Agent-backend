@@ -7,11 +7,18 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import os
-import aiohttp
 import json
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 import math
+
+# Try to import optional dependencies
+try:
+    import aiohttp
+    AIOHTTP_AVAILABLE = True
+except ImportError:
+    AIOHTTP_AVAILABLE = False
+    print("⚠️ aiohttp not available - LLM features disabled")
 
 # Create FastAPI app
 app = FastAPI(title="Valuation Backend - Ultra Minimal")
@@ -58,7 +65,14 @@ try:
     from motor.motor_asyncio import AsyncIOMotorClient
     from pymongo import MongoClient
     import asyncio
-    
+    MONGODB_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ MongoDB dependencies not available: {e}")
+    MONGODB_AVAILABLE = False
+    AsyncIOMotorClient = None
+    MongoClient = None
+
+if MONGODB_AVAILABLE:
     class MongoDBClient:
         """MongoDB client for Azure Cosmos DB for MongoDB."""
         
@@ -182,10 +196,9 @@ try:
         print("✅ MongoDB client initialized")
     else:
         print("⚠️ MongoDB not configured - using fallback storage")
-        
-except ImportError as e:
-    print(f"⚠️ MongoDB libraries not available: {e}")
-    print("⚠️ Using fallback storage")
+        mongodb_client = None
+else:
+    print("⚠️ MongoDB libraries not available - using fallback storage")
     mongodb_client = None
 
 # Valuation Engine
@@ -697,6 +710,10 @@ Special Instructions:
 
 async def call_groq_llm(message: str) -> str:
     """Call Groq LLM API."""
+    if not AIOHTTP_AVAILABLE:
+        print("⚠️ aiohttp not available - cannot call Groq LLM")
+        return None
+        
     if not USE_GROQ or not GROQ_API_KEY:
         return None
     
