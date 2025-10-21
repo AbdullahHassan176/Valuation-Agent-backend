@@ -18,7 +18,7 @@ try:
     AIOHTTP_AVAILABLE = True
 except ImportError:
     AIOHTTP_AVAILABLE = False
-    print("⚠️ aiohttp not available - LLM features disabled")
+    print("WARNING: aiohttp not available - LLM features disabled")
 
 # Create FastAPI app
 app = FastAPI(title="Valuation Backend - Ultra Minimal")
@@ -38,13 +38,13 @@ async def startup_event():
     """Initialize database on startup."""
     global db_initialized
     try:
-        print("🔍 Starting backend initialization...")
+        print("INFO: Starting backend initialization...")
         # Skip MongoDB initialization during startup to avoid timeout
-        print("⚠️ Skipping MongoDB initialization during startup - will connect on demand")
+        print("WARNING: Skipping MongoDB initialization during startup - will connect on demand")
         db_initialized = False
-        print("✅ Backend startup completed - using fallback storage")
+        print("SUCCESS: Backend startup completed - using fallback storage")
     except Exception as e:
-        print(f"❌ Database initialization error: {e}")
+        print(f"ERROR: Database initialization error: {e}")
         db_initialized = False
 
 # MongoDB configuration
@@ -63,7 +63,7 @@ try:
     import asyncio
     MONGODB_AVAILABLE = True
 except ImportError as e:
-    print(f"⚠️ MongoDB dependencies not available: {e}")
+    print(f"WARNING: MongoDB dependencies not available: {e}")
     MONGODB_AVAILABLE = False
     AsyncIOMotorClient = None
     MongoClient = None
@@ -82,14 +82,14 @@ if MONGODB_AVAILABLE:
             """Connect to MongoDB."""
             try:
                 if not self.connection_string:
-                    print("❌ No MongoDB connection string provided")
+                    print("ERROR: No MongoDB connection string provided")
                     return False
                     
-                print(f"🔍 Connecting to MongoDB...")
+                print(f"INFO: Connecting to MongoDB...")
                 
                 # For Azure Cosmos DB, use specific connection parameters
                 if "cosmos.azure.com" in self.connection_string or len(self.connection_string) > 100:
-                    print("🔍 Detected Azure Cosmos DB - using optimized connection parameters")
+                    print("INFO: Detected Azure Cosmos DB - using optimized connection parameters")
                     self.client = AsyncIOMotorClient(
                         self.connection_string,
                         serverSelectionTimeoutMS=30000,
@@ -114,10 +114,10 @@ if MONGODB_AVAILABLE:
                 
                 # Test connection with a simple ping
                 await self.client.admin.command('ping')
-                print(f"✅ Connected to MongoDB database: {self.database_name}")
+                print(f"SUCCESS: Connected to MongoDB database: {self.database_name}")
                 return True
             except Exception as e:
-                print(f"❌ MongoDB connection failed: {e}")
+                print(f"ERROR: MongoDB connection failed: {e}")
                 return False
                 
         async def create_run(self, run_data: Dict[str, Any]) -> str:
@@ -127,7 +127,7 @@ if MONGODB_AVAILABLE:
                 result = await self.db.runs.insert_one(run_data)
                 return str(result.inserted_id)
             except Exception as e:
-                print(f"❌ Error creating run: {e}")
+                print(f"ERROR: Error creating run: {e}")
                 return None
                 
         async def get_runs(self) -> List[Dict[str, Any]]:
@@ -139,7 +139,7 @@ if MONGODB_AVAILABLE:
                     runs.append(run)
                 return runs
             except Exception as e:
-                print(f"❌ Error getting runs: {e}")
+                print(f"ERROR: Error getting runs: {e}")
                 return []
                 
         async def create_curve(self, curve_data: Dict[str, Any]) -> str:
@@ -149,7 +149,7 @@ if MONGODB_AVAILABLE:
                 result = await self.db.curves.insert_one(curve_data)
                 return str(result.inserted_id)
             except Exception as e:
-                print(f"❌ Error creating curve: {e}")
+                print(f"ERROR: Error creating curve: {e}")
                 return None
                 
         async def get_curves(self) -> List[Dict[str, Any]]:
@@ -161,7 +161,7 @@ if MONGODB_AVAILABLE:
                     curves.append(curve)
                 return curves
             except Exception as e:
-                print(f"❌ Error getting curves: {e}")
+                print(f"ERROR: Error getting curves: {e}")
                 return []
                 
         async def get_database_stats(self) -> Dict[str, Any]:
@@ -178,7 +178,7 @@ if MONGODB_AVAILABLE:
                     "database_name": self.database_name
                 }
             except Exception as e:
-                print(f"❌ Error getting database stats: {e}")
+                print(f"ERROR: Error getting database stats: {e}")
                 return {"error": str(e)}
                 
         async def disconnect(self):
@@ -189,12 +189,12 @@ if MONGODB_AVAILABLE:
     # Initialize MongoDB client
     if USE_MONGODB and MONGODB_CONNECTION_STRING:
         mongodb_client = MongoDBClient()
-        print("✅ MongoDB client initialized")
+        print("SUCCESS: MongoDB client initialized")
     else:
-        print("⚠️ MongoDB not configured - using fallback storage")
+        print("WARNING: MongoDB not configured - using fallback storage")
         mongodb_client = None
 else:
-    print("⚠️ MongoDB libraries not available - using fallback storage")
+    print("WARNING: MongoDB libraries not available - using fallback storage")
     mongodb_client = None
 
 # Valuation Engine
@@ -453,14 +453,14 @@ async def test_simple_runs():
     """Simple test endpoint to return runs without complex logic."""
     global fallback_runs
     try:
-        print(f"🔍 test_simple_runs called - fallback_runs count: {len(fallback_runs)}")
+        print(f"INFO: test_simple_runs called - fallback_runs count: {len(fallback_runs)}")
         return {
             "success": True,
             "runs": fallback_runs,
             "count": len(fallback_runs)
         }
     except Exception as e:
-        print(f"❌ Error in test_simple_runs: {e}")
+        print(f"ERROR: Error in test_simple_runs: {e}")
         return {
             "success": False,
             "error": str(e),
@@ -474,17 +474,17 @@ async def get_runs():
     """Get all valuation runs."""
     global db_initialized, fallback_runs, mongodb_client
     try:
-        print(f"🔍 get_runs called - db_initialized: {db_initialized}, mongodb_client: {mongodb_client is not None}")
-        print(f"🔍 fallback_runs count: {len(fallback_runs)}")
+        print(f"INFO: get_runs called - db_initialized: {db_initialized}, mongodb_client: {mongodb_client is not None}")
+        print(f"INFO: fallback_runs count: {len(fallback_runs)}")
         
         if db_initialized and mongodb_client:
-            print("📊 Fetching runs from MongoDB...")
+            print("DATA: Fetching runs from MongoDB...")
             runs = await mongodb_client.get_runs()
-            print(f"✅ Retrieved {len(runs)} runs from MongoDB")
+            print(f"SUCCESS: Retrieved {len(runs)} runs from MongoDB")
             
             # If MongoDB returns empty results, fall back to in-memory storage
             if not runs:
-                print("⚠️ MongoDB returned empty results, using fallback storage")
+                print("WARNING: MongoDB returned empty results, using fallback storage")
                 return fallback_runs
             
             # Transform runs to match frontend interface
@@ -509,10 +509,10 @@ async def get_runs():
                 }
                 transformed_runs.append(transformed_run)
             
-            print(f"✅ Transformed {len(transformed_runs)} runs for frontend")
+            print(f"SUCCESS: Transformed {len(transformed_runs)} runs for frontend")
             return transformed_runs
         else:
-            print("📊 Using fallback runs storage")
+            print("DATA: Using fallback runs storage")
             # Transform fallback runs to match frontend interface
             transformed_runs = []
             for run in fallback_runs:
@@ -534,18 +534,18 @@ async def get_runs():
                 }
                 transformed_runs.append(transformed_run)
             
-            print(f"✅ Transformed {len(transformed_runs)} fallback runs for frontend")
+            print(f"SUCCESS: Transformed {len(transformed_runs)} fallback runs for frontend")
             return transformed_runs
     except Exception as e:
-        print(f"❌ Error getting runs: {e}")
-        print(f"❌ Error type: {type(e).__name__}")
+        print(f"ERROR: Error getting runs: {e}")
+        print(f"ERROR: Error type: {type(e).__name__}")
         import traceback
-        print(f"❌ Traceback: {traceback.format_exc()}")
+        print(f"ERROR: Traceback: {traceback.format_exc()}")
         # Return fallback runs even if there's an error
         try:
             return fallback_runs
         except Exception as fallback_error:
-            print(f"❌ Fallback error: {fallback_error}")
+            print(f"ERROR: Fallback error: {fallback_error}")
             return []
 
 @app.get("/api/valuation/runs/all")
@@ -561,7 +561,7 @@ async def get_all_runs():
         else:
             return fallback_runs
     except Exception as e:
-        print(f"❌ Error getting all runs: {e}")
+        print(f"ERROR: Error getting all runs: {e}")
         return fallback_runs
 
 @app.get("/api/valuation/runs/my")
@@ -578,7 +578,7 @@ async def get_my_runs():
         else:
             return fallback_runs
     except Exception as e:
-        print(f"❌ Error getting my runs: {e}")
+        print(f"ERROR: Error getting my runs: {e}")
         return fallback_runs
 
 @app.get("/api/valuation/runs/recent")
@@ -601,7 +601,7 @@ async def get_recent_runs():
             # Return last 3 runs from fallback
             return fallback_runs[-3:] if len(fallback_runs) > 3 else fallback_runs
     except Exception as e:
-        print(f"❌ Error getting recent runs: {e}")
+        print(f"ERROR: Error getting recent runs: {e}")
         return fallback_runs
 
 @app.get("/api/valuation/runs/archived")
@@ -624,7 +624,7 @@ async def get_archived_runs():
         else:
             return []
     except Exception as e:
-        print(f"❌ Error getting archived runs: {e}")
+        print(f"ERROR: Error getting archived runs: {e}")
         return []
 
 @app.post("/api/valuation/runs")
@@ -632,15 +632,15 @@ async def create_run(request: dict):
     """Create a new valuation run with actual calculations."""
     global fallback_runs
     try:
-        print(f"🔍 Starting run creation with request: {request}")
+        print(f"INFO: Starting run creation with request: {request}")
         spec = request.get("spec", {})
         as_of = request.get("asOf", datetime.now().strftime("%Y-%m-%d"))
-        print(f"🔍 Spec: {spec}")
-        print(f"🔍 AsOf: {as_of}")
+        print(f"INFO: Spec: {spec}")
+        print(f"INFO: AsOf: {as_of}")
         
         # Determine instrument type and perform valuation
         instrument_type = spec.get("instrument_type", "IRS")
-        print(f"🔍 Instrument type: {instrument_type}")
+        print(f"INFO: Instrument type: {instrument_type}")
         valuation_result = None
         
         if instrument_type == "IRS":
@@ -651,13 +651,13 @@ async def create_run(request: dict):
             currency = spec.get("ccy", "USD")
             frequency = spec.get("frequency", "SemiAnnual")
             
-            print(f"🔍 IRS parameters: notional={notional}, fixed_rate={fixed_rate}, tenor_years={tenor_years}, currency={currency}, frequency={frequency}")
+            print(f"INFO: IRS parameters: notional={notional}, fixed_rate={fixed_rate}, tenor_years={tenor_years}, currency={currency}, frequency={frequency}")
             
             try:
                 # Simplified valuation for now
-                print(f"🔍 Attempting IRS valuation for {currency} {tenor_years}Y swap...")
-                print(f"🔍 Valuation engine available: {valuation_engine is not None}")
-                print(f"🔍 Valuation engine type: {type(valuation_engine)}")
+                print(f"INFO: Attempting IRS valuation for {currency} {tenor_years}Y swap...")
+                print(f"INFO: Valuation engine available: {valuation_engine is not None}")
+                print(f"INFO: Valuation engine type: {type(valuation_engine)}")
                 
                 valuation_result = valuation_engine.calculate_irs_valuation(
                     notional=notional,
@@ -666,13 +666,13 @@ async def create_run(request: dict):
                     currency=currency,
                     frequency=frequency
                 )
-                print(f"✅ IRS valuation completed: NPV = {valuation_result.get('npv', 0.0)}")
-                print(f"✅ Valuation result keys: {list(valuation_result.keys()) if valuation_result else 'None'}")
+                print(f"SUCCESS: IRS valuation completed: NPV = {valuation_result.get('npv', 0.0)}")
+                print(f"SUCCESS: Valuation result keys: {list(valuation_result.keys()) if valuation_result else 'None'}")
             except Exception as e:
-                print(f"❌ Error in IRS valuation: {e}")
-                print(f"❌ Error type: {type(e).__name__}")
+                print(f"ERROR: Error in IRS valuation: {e}")
+                print(f"ERROR: Error type: {type(e).__name__}")
                 import traceback
-                print(f"❌ Traceback: {traceback.format_exc()}")
+                print(f"ERROR: Traceback: {traceback.format_exc()}")
                 # Create a simple fallback valuation result
                 valuation_result = {
                     "npv": notional * 0.01,  # 1% of notional as fallback
@@ -680,7 +680,7 @@ async def create_run(request: dict):
                     "instrument_type": "Interest Rate Swap",
                     "method": "fallback"
                 }
-                print(f"⚠️ Using fallback valuation: NPV = {valuation_result['npv']}")
+                print(f"WARNING: Using fallback valuation: NPV = {valuation_result['npv']}")
             
         elif instrument_type == "CCS":
             # Cross Currency Swap valuation
@@ -694,7 +694,7 @@ async def create_run(request: dict):
             fx_rate = spec.get("fx_rate", 1.0)
             
             try:
-                print(f"🔍 Attempting CCS valuation for {base_currency}/{quote_currency} swap...")
+                print(f"INFO: Attempting CCS valuation for {base_currency}/{quote_currency} swap...")
                 valuation_result = valuation_engine.calculate_ccs_valuation(
                     notional_base=notional_base,
                     notional_quote=notional_quote,
@@ -705,10 +705,10 @@ async def create_run(request: dict):
                     tenor_years=tenor_years,
                     fx_rate=fx_rate
                 )
-                print(f"✅ CCS valuation completed: NPV = {valuation_result.get('npv_base_ccy', 0.0)}")
+                print(f"SUCCESS: CCS valuation completed: NPV = {valuation_result.get('npv_base_ccy', 0.0)}")
             except Exception as e:
-                print(f"❌ Error in CCS valuation: {e}")
-                print(f"❌ Error type: {type(e).__name__}")
+                print(f"ERROR: Error in CCS valuation: {e}")
+                print(f"ERROR: Error type: {type(e).__name__}")
                 # Create a simple fallback valuation result
                 valuation_result = {
                     "npv_base_ccy": notional_base * 0.01,  # 1% of base notional as fallback
@@ -716,31 +716,31 @@ async def create_run(request: dict):
                     "instrument_type": "Cross Currency Swap",
                     "method": "fallback"
                 }
-                print(f"⚠️ Using fallback valuation: NPV = {valuation_result['npv_base_ccy']}")
+                print(f"WARNING: Using fallback valuation: NPV = {valuation_result['npv_base_ccy']}")
         
         # Create run with valuation results - match frontend interface
-        print(f"🔍 Creating run with valuation result: {valuation_result}")
+        print(f"INFO: Creating run with valuation result: {valuation_result}")
         run_id = f"run-{int(datetime.now().timestamp() * 1000)}"
         notional = spec.get("notional", 10000000)
         currency = spec.get("ccy", "USD")
         tenor_years = spec.get("tenor_years", 5.0)
         fixed_rate = spec.get("fixedRate", 0.035)
         
-        print(f"🔍 Run parameters: run_id={run_id}, notional={notional}, currency={currency}, tenor_years={tenor_years}, fixed_rate={fixed_rate}")
+        print(f"INFO: Run parameters: run_id={run_id}, notional={notional}, currency={currency}, tenor_years={tenor_years}, fixed_rate={fixed_rate}")
         
         # Safely extract valuation results
         npv_value = 0.0
         if valuation_result:
             npv_value = valuation_result.get("npv", valuation_result.get("npv_base_ccy", 0.0))
-            print(f"🔍 Extracted NPV from valuation result: {npv_value}")
+            print(f"INFO: Extracted NPV from valuation result: {npv_value}")
         else:
             # Fallback calculation if valuation failed
-            print("⚠️ Using fallback NPV calculation")
+            print("WARNING: Using fallback NPV calculation")
             npv_value = notional * 0.01  # Simple 1% of notional as fallback
         
         # Calculate PV01 (simplified)
         pv01 = abs(npv_value) * 0.0001
-        print(f"🔍 Calculated PV01: {pv01}")
+        print(f"INFO: Calculated PV01: {pv01}")
         
         new_run = {
             "id": run_id,
@@ -770,20 +770,20 @@ async def create_run(request: dict):
             }
         }
         
-        print(f"🔍 Attempting to store run: {new_run}")
+        print(f"INFO: Attempting to store run: {new_run}")
         
         # Try MongoDB connection on demand
         global db_initialized
         if mongodb_client and not db_initialized:
-            print("🔍 Attempting MongoDB connection on demand...")
+            print("INFO: Attempting MongoDB connection on demand...")
             try:
                 db_initialized = await mongodb_client.connect()
                 if db_initialized:
-                    print("✅ MongoDB connected successfully")
+                    print("SUCCESS: MongoDB connected successfully")
                 else:
-                    print("⚠️ MongoDB connection failed")
+                    print("WARNING: MongoDB connection failed")
             except Exception as e:
-                print(f"❌ MongoDB connection error: {e}")
+                print(f"ERROR: MongoDB connection error: {e}")
                 db_initialized = False
         
         if db_initialized and mongodb_client:
@@ -792,27 +792,27 @@ async def create_run(request: dict):
                 mongo_id = await mongodb_client.create_run(new_run)
                 if mongo_id:
                     new_run["mongo_id"] = mongo_id
-                    print(f"✅ Run stored in MongoDB with ID: {mongo_id}")
+                    print(f"SUCCESS: Run stored in MongoDB with ID: {mongo_id}")
                 else:
-                    print("⚠️ Failed to store in MongoDB, using fallback")
+                    print("WARNING: Failed to store in MongoDB, using fallback")
                     fallback_runs.append(new_run)
-                    print(f"✅ Run added to fallback storage: {new_run['id']}")
+                    print(f"SUCCESS: Run added to fallback storage: {new_run['id']}")
             except Exception as e:
-                print(f"❌ Error storing in MongoDB: {e}")
-                print("⚠️ Using fallback storage")
+                print(f"ERROR: Error storing in MongoDB: {e}")
+                print("WARNING: Using fallback storage")
                 fallback_runs.append(new_run)
-                print(f"✅ Run added to fallback storage: {new_run['id']}")
+                print(f"SUCCESS: Run added to fallback storage: {new_run['id']}")
         else:
             print("💾 Storing run in fallback storage...")
             fallback_runs.append(new_run)
-            print(f"✅ Run added to fallback storage: {new_run['id']}")
+            print(f"SUCCESS: Run added to fallback storage: {new_run['id']}")
         
         # Always ensure run is in fallback storage as backup
         if not any(run.get("id") == new_run.get("id") for run in fallback_runs):
             fallback_runs.append(new_run)
-            print(f"✅ Run added to fallback storage as backup: {new_run['id']}")
+            print(f"SUCCESS: Run added to fallback storage as backup: {new_run['id']}")
         
-        print(f"✅ Run creation completed successfully: {new_run['id']}")
+        print(f"SUCCESS: Run creation completed successfully: {new_run['id']}")
         
         # Return only serializable fields (remove any MongoDB-specific fields)
         serializable_run = {
@@ -839,7 +839,7 @@ async def create_run(request: dict):
         
         return serializable_run
     except Exception as e:
-        print(f"❌ Error creating run: {e}")
+        print(f"ERROR: Error creating run: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Curves endpoint
@@ -849,15 +849,15 @@ async def get_curves():
     global db_initialized
     try:
         if db_initialized and mongodb_client:
-            print("📈 Fetching curves from MongoDB...")
+            print("ANALYTICS: Fetching curves from MongoDB...")
             curves = await mongodb_client.get_curves()
-            print(f"✅ Retrieved {len(curves)} curves from MongoDB")
+            print(f"SUCCESS: Retrieved {len(curves)} curves from MongoDB")
             return curves if curves else fallback_curves
         else:
-            print("📈 Using fallback curves storage")
+            print("ANALYTICS: Using fallback curves storage")
             return fallback_curves
     except Exception as e:
-        print(f"❌ Error getting curves: {e}")
+        print(f"ERROR: Error getting curves: {e}")
         return fallback_curves
 
 # Groq LLM configuration
@@ -903,7 +903,7 @@ Special Instructions:
 async def call_groq_llm(message: str) -> str:
     """Call Groq LLM API."""
     if not AIOHTTP_AVAILABLE:
-        print("⚠️ aiohttp not available - cannot call Groq LLM")
+        print("WARNING: aiohttp not available - cannot call Groq LLM")
         return None
         
     if not USE_GROQ or not GROQ_API_KEY:
@@ -936,11 +936,11 @@ async def call_groq_llm(message: str) -> str:
                     data = await response.json()
                     return data["choices"][0]["message"]["content"]
                 else:
-                    print(f"❌ Groq API error: {response.status}")
+                    print(f"ERROR: Groq API error: {response.status}")
                     return None
                     
     except Exception as e:
-        print(f"❌ Groq LLM error: {e}")
+        print(f"ERROR: Groq LLM error: {e}")
         return None
 
 # Chat endpoint
@@ -948,13 +948,13 @@ async def call_groq_llm(message: str) -> str:
 async def chat_endpoint(request: dict):
     """AI chat endpoint with Groq LLM integration."""
     message = request.get("message", "")
-    print(f"💬 Chat message received: {message[:50]}...")
+    print(f"CHAT: Chat message received: {message[:50]}...")
     
     # Try Groq LLM first
     llm_response = await call_groq_llm(message)
     
     if llm_response:
-        print(f"✅ Groq LLM response generated")
+        print(f"SUCCESS: Groq LLM response generated")
         return {
             "response": llm_response,
             "llm_powered": True,
@@ -963,7 +963,7 @@ async def chat_endpoint(request: dict):
             "timestamp": datetime.now().isoformat()
         }
     else:
-        print(f"⚠️ Using fallback response")
+        print(f"WARNING: Using fallback response")
         # Fallback responses
         if "irshad" in message.lower():
             response = "Irshad? Oh, you mean the guy who still uses Excel 2003 and thinks 'Ctrl+Z' is cutting-edge technology? 😂"
@@ -1017,7 +1017,7 @@ async def get_database_status():
     global db_initialized
     try:
         if db_initialized and mongodb_client:
-            print("📊 Getting MongoDB database status...")
+            print("DATA: Getting MongoDB database status...")
             # Test if MongoDB is actually working by trying to get runs
             try:
                 runs = await mongodb_client.get_runs()
@@ -1027,7 +1027,7 @@ async def get_database_status():
                     return stats
                 else:
                     # MongoDB is not working, use fallback
-                    print("⚠️ MongoDB returned empty results, using fallback status")
+                    print("WARNING: MongoDB returned empty results, using fallback status")
                     return {
                         "database_type": "fallback",
                         "status": "connected",
@@ -1038,7 +1038,7 @@ async def get_database_status():
                         "note": "MongoDB connection failed, using fallback storage"
                     }
             except Exception as e:
-                print(f"⚠️ MongoDB test failed: {e}, using fallback status")
+                print(f"WARNING: MongoDB test failed: {e}, using fallback status")
                 return {
                     "database_type": "fallback",
                     "status": "connected",
@@ -1058,7 +1058,7 @@ async def get_database_status():
                 "mongodb_initialized": db_initialized
             }
     except Exception as e:
-        print(f"❌ Error getting database status: {e}")
+        print(f"ERROR: Error getting database status: {e}")
         return {
             "database_type": "error",
             "status": "error",
@@ -1117,7 +1117,7 @@ async def test_mongodb():
         }
         
     except Exception as e:
-        print(f"❌ MongoDB test error: {e}")
+        print(f"ERROR: MongoDB test error: {e}")
         return {
             "mongodb_available": False,
             "error": str(e),
@@ -1150,7 +1150,7 @@ async def archive_run(run_id: str):
                     return {"success": True, "message": "Run archived successfully"}
             return {"success": False, "message": "Run not found"}
     except Exception as e:
-        print(f"❌ Error archiving run: {e}")
+        print(f"ERROR: Error archiving run: {e}")
         return {"success": False, "message": str(e)}
 
 @app.delete("/api/valuation/runs/{run_id}")
@@ -1170,7 +1170,7 @@ async def delete_run(run_id: str):
             fallback_runs = [run for run in fallback_runs if run.get("id") != run_id]
             return {"success": True, "message": "Run deleted successfully"}
     except Exception as e:
-        print(f"❌ Error deleting run: {e}")
+        print(f"ERROR: Error deleting run: {e}")
         return {"success": False, "message": str(e)}
 
 @app.put("/api/valuation/runs/{run_id}/restore")
@@ -1196,7 +1196,7 @@ async def restore_run(run_id: str):
                     return {"success": True, "message": "Run restored successfully"}
             return {"success": False, "message": "Run not found"}
     except Exception as e:
-        print(f"❌ Error restoring run: {e}")
+        print(f"ERROR: Error restoring run: {e}")
         return {"success": False, "message": str(e)}
 
 # Detailed run analysis endpoint
@@ -1243,7 +1243,7 @@ async def get_run_details(run_id: str):
         return analysis
         
     except Exception as e:
-        print(f"❌ Error getting run details: {e}")
+        print(f"ERROR: Error getting run details: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Debug endpoint to see raw MongoDB data
@@ -1303,7 +1303,7 @@ async def test_echo_request(request: dict):
 async def test_create_minimal_run(request: dict):
     """Test creating a minimal run with the same structure as the main endpoint."""
     try:
-        print(f"🔍 Minimal run creation with request: {request}")
+        print(f"INFO: Minimal run creation with request: {request}")
         
         spec = request.get("spec", {})
         as_of = request.get("asOf", datetime.now().strftime("%Y-%m-%d"))
@@ -1343,14 +1343,14 @@ async def test_create_minimal_run(request: dict):
         
         # Store in fallback storage
         fallback_runs.append(new_run)
-        print(f"✅ Minimal run created: {run_id}")
+        print(f"SUCCESS: Minimal run created: {run_id}")
         
         return new_run
         
     except Exception as e:
-        print(f"❌ Error in minimal run creation: {e}")
+        print(f"ERROR: Error in minimal run creation: {e}")
         import traceback
-        print(f"❌ Traceback: {traceback.format_exc()}")
+        print(f"ERROR: Traceback: {traceback.format_exc()}")
         return {
             "success": False,
             "error": str(e),
@@ -1383,7 +1383,7 @@ async def test_create_simple_run():
         
         # Add to fallback storage
         fallback_runs.append(simple_run)
-        print(f"✅ Created simple test run: {run_id}")
+        print(f"SUCCESS: Created simple test run: {run_id}")
         
         return {
             "success": True,
@@ -1392,7 +1392,7 @@ async def test_create_simple_run():
         }
         
     except Exception as e:
-        print(f"❌ Error creating simple run: {e}")
+        print(f"ERROR: Error creating simple run: {e}")
         return {
             "success": False,
             "error": str(e)
@@ -1424,7 +1424,7 @@ async def test_verify_runs():
         
         # Add to fallback storage
         fallback_runs.append(test_run)
-        print(f"✅ Test run added: {test_run['id']}")
+        print(f"SUCCESS: Test run added: {test_run['id']}")
         
         return {
             "success": True,
@@ -1434,7 +1434,7 @@ async def test_verify_runs():
         }
         
     except Exception as e:
-        print(f"❌ Error in test_verify_runs: {e}")
+        print(f"ERROR: Error in test_verify_runs: {e}")
         return {
             "success": False,
             "error": str(e),
@@ -1649,7 +1649,7 @@ def generate_valuation_report_html(run_data: dict, config: dict) -> str:
     </div>
 
     <div class="section">
-        <h2>📊 Executive Summary</h2>
+        <h2>DATA: Executive Summary</h2>
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-value">${run_data.get('pv', 0):,.0f}</div>
@@ -1667,7 +1667,7 @@ def generate_valuation_report_html(run_data: dict, config: dict) -> str:
     </div>
 
     <div class="section">
-        <h2>📈 Risk Analytics</h2>
+        <h2>ANALYTICS: Risk Analytics</h2>
         <div class="chart-container">
             <canvas id="riskChart" width="400" height="200"></canvas>
         </div>
@@ -1754,7 +1754,7 @@ def generate_portfolio_report_html(run_data: list, config: dict) -> str:
         <p>Comprehensive Portfolio Analysis</p>
     </div>
     <div class="section">
-        <h2>📊 Portfolio Overview</h2>
+        <h2>DATA: Portfolio Overview</h2>
         <p>Total Instruments: {len(run_data)}</p>
         <p>Total Present Value: ${sum(run.get('pv', 0) for run in run_data):,.2f}</p>
     </div>
@@ -1783,7 +1783,7 @@ def generate_analytics_report_html(run_data: list, config: dict) -> str:
         <p>Comprehensive Risk Analysis and Stress Testing</p>
     </div>
     <div class="section">
-        <h2>📈 Risk Analytics</h2>
+        <h2>ANALYTICS: Risk Analytics</h2>
         <p>Advanced risk metrics and stress testing results</p>
         <p>VaR (95%): $8,500</p>
         <p>Expected Shortfall: $12,300</p>
