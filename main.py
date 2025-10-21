@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Startup script for Azure App Service
+Main entry point for Azure App Service
 """
 import sys
 import os
