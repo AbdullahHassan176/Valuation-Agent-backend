@@ -369,10 +369,23 @@ class ValuationEngine:
 # Initialize valuation engine
 valuation_engine = ValuationEngine()
 
-# In-memory storage (fallback)
+# In-memory storage (fallback) - Format matches frontend interface
 fallback_runs = [
     {
         "id": "run-001",
+        "name": "USD 5Y IRS",
+        "type": "IRS",
+        "status": "completed",
+        "notional": 10000000,
+        "currency": "USD",
+        "tenor": "5Y",
+        "fixedRate": 0.035,
+        "floatingIndex": "SOFR",
+        "pv": 125000.50,
+        "pv01": 2500.0,
+        "created_at": datetime.now().isoformat(),
+        "completed_at": datetime.now().isoformat(),
+        "progress": 100,
         "asOf": "2024-01-15",
         "spec": {
             "ccy": "USD",
@@ -381,12 +394,23 @@ fallback_runs = [
             "effective": "2024-01-01",
             "maturity": "2029-01-01"
         },
-        "pv_base_ccy": 125000.50,
-        "status": "completed",
-        "created_at": datetime.now().isoformat()
+        "pv_base_ccy": 125000.50
     },
     {
         "id": "run-002", 
+        "name": "EUR 3Y IRS",
+        "type": "IRS",
+        "status": "completed",
+        "notional": 5000000,
+        "currency": "EUR",
+        "tenor": "3Y",
+        "fixedRate": 0.025,
+        "floatingIndex": "EURIBOR",
+        "pv": -75000.25,
+        "pv01": 1500.0,
+        "created_at": datetime.now().isoformat(),
+        "completed_at": datetime.now().isoformat(),
+        "progress": 100,
         "asOf": "2024-01-15",
         "spec": {
             "ccy": "EUR",
@@ -395,9 +419,7 @@ fallback_runs = [
             "effective": "2024-01-01",
             "maturity": "2027-01-01"
         },
-        "pv_base_ccy": -75000.25,
-        "status": "completed",
-        "created_at": datetime.now().isoformat()
+        "pv_base_ccy": -75000.25
     }
 ]
 
@@ -467,7 +489,29 @@ async def get_runs():
             return transformed_runs
         else:
             print("📊 Using fallback runs storage")
-            return fallback_runs
+            # Transform fallback runs to match frontend interface
+            transformed_runs = []
+            for run in fallback_runs:
+                transformed_run = {
+                    "id": run.get("id", "unknown"),
+                    "name": run.get("name", f"{run.get('currency', 'USD')} {run.get('tenor', '5Y')} {run.get('type', 'IRS')}"),
+                    "type": run.get("type", "IRS"),
+                    "status": run.get("status", "completed"),
+                    "notional": run.get("notional", 0),
+                    "currency": run.get("currency", "USD"),
+                    "tenor": run.get("tenor", "5Y"),
+                    "fixedRate": run.get("fixedRate"),
+                    "floatingIndex": run.get("floatingIndex", "SOFR"),
+                    "pv": run.get("pv", run.get("pv_base_ccy", 0)),
+                    "pv01": run.get("pv01", 0),
+                    "created_at": run.get("created_at", datetime.now().isoformat()),
+                    "completed_at": run.get("completed_at"),
+                    "error": run.get("error")
+                }
+                transformed_runs.append(transformed_run)
+            
+            print(f"✅ Transformed {len(transformed_runs)} fallback runs for frontend")
+            return transformed_runs
     except Exception as e:
         print(f"❌ Error getting runs: {e}")
         return fallback_runs
