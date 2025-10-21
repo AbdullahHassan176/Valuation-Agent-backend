@@ -13,38 +13,38 @@ sys.path.insert(0, str(current_dir))
 
 print(f"🔍 Starting working HTTP server from: {current_dir}")
 
-# Use the working HTTP server with intelligent chat responses
+# Try the full FastAPI app with enhanced report generation first
 try:
-    from startup_working import ValuationHandler
-    from http.server import HTTPServer
-    import os
-    
-    print("✅ Working HTTP server imported successfully")
+    from app_ultra_minimal import app
+    print("✅ Ultra minimal app with enhanced reports imported successfully")
     
     if __name__ == "__main__":
+        import uvicorn
         port = int(os.environ.get("PORT", 8000))
-        print(f"🚀 Starting working HTTP server on port {port}")
-        
-        server = HTTPServer(('0.0.0.0', port), ValuationHandler)
-        print(f"✅ Server started successfully on port {port}")
-        server.serve_forever()
+        print(f"🚀 Starting ultra-minimal backend with enhanced reports on port {port}")
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
         
 except Exception as e:
-    print(f"❌ Error starting working HTTP server: {e}")
+    print(f"❌ Error starting ultra-minimal app: {e}")
     print(f"❌ Error type: {type(e).__name__}")
     import traceback
     print(f"❌ Traceback: {traceback.format_exc()}")
     
-    # Fallback to ultra minimal app
+    # Fallback to working HTTP server with intelligent chat responses
     try:
-        from app_ultra_minimal import app
-        print("✅ Ultra minimal app imported successfully")
+        from startup_working import ValuationHandler
+        from http.server import HTTPServer
+        import os
+        
+        print("✅ Working HTTP server imported successfully")
         
         if __name__ == "__main__":
-            import uvicorn
             port = int(os.environ.get("PORT", 8000))
-            print(f"🚀 Starting ultra-minimal backend on port {port}")
-            uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+            print(f"🚀 Starting working HTTP server on port {port}")
+            
+            server = HTTPServer(('0.0.0.0', port), ValuationHandler)
+            print(f"✅ Server started successfully on port {port}")
+            server.serve_forever()
             
     except Exception as e2:
         print(f"❌ Error starting ultra-minimal app: {e2}")
