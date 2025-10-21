@@ -7,6 +7,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import os
+import aiohttp
+import json
 
 # Create FastAPI app
 app = FastAPI(title="Valuation Backend - Ultra Minimal")
@@ -106,24 +108,119 @@ async def get_curves():
     """Get all yield curves."""
     return fallback_curves
 
+# Groq LLM configuration
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+USE_GROQ = os.getenv("USE_GROQ", "true").lower() == "true"
+
+# System prompt for the AI agent
+SYSTEM_PROMPT = """You are a senior quantitative risk analyst and valuation specialist with 15+ years of experience in derivatives pricing, XVA calculations, and risk management. You work at a top-tier investment bank and are known for your technical expertise and precise communication style.
+
+Your expertise includes:
+- Advanced derivative valuation (IRS, CCS, options, structured products)
+- XVA calculations (CVA, DVA, FVA, KVA, MVA)
+- Risk metrics (DV01, duration, convexity, VaR, ES)
+- IFRS 13 compliance and fair value measurement
+- Regulatory capital requirements (Basel III, CRR)
+- Monte Carlo simulation and numerical methods
+- Hull-White and other interest rate models
+- ISDA SIMM and initial margin calculations
+
+Communication Style:
+- Be technically precise and sophisticated
+- Use quantitative finance terminology appropriately
+- Ask probing questions about models, parameters, and methodologies
+- Provide detailed explanations with mathematical context
+- Challenge assumptions and suggest improvements
+- Be conversational but maintain professional expertise
+
+You can help with:
+- Valuation methodology analysis
+- Risk assessment and scenario analysis
+- XVA calculation guidance
+- IFRS 13 compliance questions
+- Model validation and backtesting
+- Regulatory reporting requirements
+- Best practices for risk management
+
+Always provide technically sound, actionable advice while maintaining a professional yet approachable tone."""
+
+async def call_groq_llm(message: str) -> str:
+    """Call Groq LLM API."""
+    if not USE_GROQ or not GROQ_API_KEY:
+        return None
+    
+    try:
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": GROQ_MODEL,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": message}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 1000
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{GROQ_BASE_URL}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data["choices"][0]["message"]["content"]
+                else:
+                    print(f"❌ Groq API error: {response.status}")
+                    return None
+                    
+    except Exception as e:
+        print(f"❌ Groq LLM error: {e}")
+        return None
+
 # Chat endpoint
 @app.post("/poc/chat")
 async def chat_endpoint(request: dict):
-    """AI chat endpoint."""
+    """AI chat endpoint with Groq LLM integration."""
     message = request.get("message", "")
+    print(f"💬 Chat message received: {message[:50]}...")
     
-    if "irshad" in message.lower():
-        response = "Irshad? Oh, you mean the guy who still uses Excel 2003 and thinks 'Ctrl+Z' is cutting-edge technology? 😂"
-    elif "xva" in message.lower():
-        response = "I can help you with XVA calculations including CVA, DVA, FVA, KVA, and MVA."
+    # Try Groq LLM first
+    llm_response = await call_groq_llm(message)
+    
+    if llm_response:
+        print(f"✅ Groq LLM response generated")
+        return {
+            "response": llm_response,
+            "llm_powered": True,
+            "version": "1.0.0",
+            "model": GROQ_MODEL,
+            "timestamp": datetime.now().isoformat()
+        }
     else:
-        response = "Hello! I'm your AI valuation specialist. How can I help you today?"
-    
-    return {
-        "response": response,
-        "llm_powered": True,
-        "version": "1.0.0"
-    }
+        print(f"⚠️ Using fallback response")
+        # Fallback responses
+        if "irshad" in message.lower():
+            response = "Irshad? Oh, you mean the guy who still uses Excel 2003 and thinks 'Ctrl+Z' is cutting-edge technology? 😂"
+        elif "xva" in message.lower():
+            response = "I can help you with XVA calculations including CVA, DVA, FVA, KVA, and MVA."
+        else:
+            response = "Hello! I'm your AI valuation specialist. How can I help you today?"
+        
+        return {
+            "response": response,
+            "llm_powered": False,
+            "version": "1.0.0",
+            "fallback": True,
+            "timestamp": datetime.now().isoformat()
+        }
 
 # IFRS endpoint
 @app.post("/poc/ifrs-ask")
@@ -164,6 +261,19 @@ async def get_database_status():
         "status": "connected",
         "total_runs": len(fallback_runs),
         "total_curves": len(fallback_curves)
+    }
+
+# Groq configuration test endpoint
+@app.get("/api/test/groq-config")
+async def test_groq_config():
+    """Test Groq LLM configuration."""
+    return {
+        "groq_configured": bool(GROQ_API_KEY),
+        "groq_base_url": GROQ_BASE_URL,
+        "groq_model": GROQ_MODEL,
+        "use_groq": USE_GROQ,
+        "api_key_present": bool(GROQ_API_KEY),
+        "api_key_preview": f"{GROQ_API_KEY[:8]}..." if GROQ_API_KEY else "Not set"
     }
 
 if __name__ == "__main__":
