@@ -579,7 +579,7 @@ async def chat_post(request: dict = None):
     # Handle different types of queries
     if any(word in message for word in ["hello", "hi", "hey", "good morning", "good afternoon"]):
         return {
-            "response": "Hello! I'm your valuation assistant. I can help you with:\n• Analyzing valuation runs\n• Generating sensitivity scenarios\n• Exporting reports\n• IFRS-13 compliance questions\n\nWhat would you like to know?",
+            "response": "Hello! I'm your AI valuation assistant. I can help you with:\n• Analyzing valuation runs\n• Generating sensitivity scenarios\n• Exporting reports\n• IFRS-13 compliance questions\n\nWhat would you like to know?",
             "status": "success"
         }
     
@@ -592,18 +592,37 @@ async def chat_post(request: dict = None):
                 runs = fallback_runs[-5:] if fallback_runs else []
             
             if runs:
-                response = f"Here are your recent valuation runs:\n\n"
-                for run in runs:
-                    response += f"• **{run.get('id', 'Unknown')}** - {run.get('instrument_type', 'Unknown')} ({run.get('currency', 'Unknown')})\n"
-                    response += f"  Status: {run.get('status', 'Unknown')}\n"
-                    response += f"  PV: ${run.get('pv_base_ccy', 0):,.2f}\n"
-                    response += f"  Notional: ${run.get('notional_amount', 0):,.0f}\n\n"
+                response = f"📊 **Here are your recent valuation runs:**\n\n"
+                for i, run in enumerate(runs, 1):
+                    instrument_type = run.get('instrument_type', 'Unknown')
+                    currency = run.get('currency', 'Unknown')
+                    pv = run.get('pv_base_ccy', 0)
+                    notional = run.get('notional_amount', 0)
+                    status = run.get('status', 'Unknown')
+                    
+                    # Add emoji based on instrument type
+                    emoji = "📈" if instrument_type == "IRS" else "🔄" if instrument_type == "CCS" else "📊"
+                    
+                    response += f"{emoji} **Run {i}: {run.get('id', 'Unknown')}**\n"
+                    response += f"   • Type: {instrument_type} ({currency})\n"
+                    response += f"   • Status: {status}\n"
+                    response += f"   • Present Value: ${pv:,.2f}\n"
+                    response += f"   • Notional: ${notional:,.0f}\n\n"
+                
+                response += "💡 **What would you like to know about these runs?**\n"
+                response += "• I can explain the valuation methodology\n"
+                response += "• I can analyze risk metrics\n"
+                response += "• I can help with sensitivity analysis"
             else:
-                response = "No valuation runs found. Would you like me to help you create one?"
+                response = "🔍 **No valuation runs found yet.**\n\n"
+                response += "Would you like me to help you create one? I can guide you through:\n"
+                response += "• Setting up an Interest Rate Swap (IRS)\n"
+                response += "• Configuring a Cross Currency Swap (CCS)\n"
+                response += "• Understanding the valuation process"
             
             return {"response": response, "status": "success"}
         except Exception as e:
-            return {"response": f"Sorry, I couldn't retrieve the runs. Error: {str(e)}", "status": "error"}
+            return {"response": f"❌ Sorry, I couldn't retrieve the runs. Error: {str(e)}", "status": "error"}
     
     elif any(word in message for word in ["curves", "yield", "rates"]):
         try:
@@ -614,17 +633,45 @@ async def chat_post(request: dict = None):
                 curves = fallback_curves[-5:] if fallback_curves else []
             
             if curves:
-                response = "Here are the available yield curves:\n\n"
+                response = "📈 **Available Yield Curves:**\n\n"
                 for curve in curves:
-                    response += f"• **{curve.get('currency', 'Unknown')} {curve.get('type', 'Unknown')}**\n"
-                    response += f"  As of: {curve.get('as_of_date', 'Unknown')}\n"
-                    response += f"  Nodes: {len(curve.get('nodes', []))} points\n\n"
+                    currency = curve.get('currency', 'Unknown')
+                    curve_type = curve.get('type', 'Unknown')
+                    as_of_date = curve.get('as_of_date', 'Unknown')
+                    nodes = curve.get('nodes', [])
+                    
+                    # Add currency emoji
+                    currency_emoji = {"USD": "🇺🇸", "EUR": "🇪🇺", "GBP": "🇬🇧"}.get(currency, "💱")
+                    
+                    response += f"{currency_emoji} **{currency} {curve_type}**\n"
+                    response += f"   • As of: {as_of_date}\n"
+                    response += f"   • Tenor points: {len(nodes)}\n"
+                    
+                    # Show sample rates
+                    if nodes and len(nodes) > 0:
+                        sample_rates = nodes[:3]  # Show first 3 rates
+                        response += f"   • Sample rates: "
+                        for node in sample_rates:
+                            tenor = node.get('tenor', 'N/A')
+                            rate = node.get('rate', 0)
+                            response += f"{tenor} {rate:.3%}, "
+                        response = response.rstrip(", ") + "\n"
+                    response += "\n"
+                
+                response += "💡 **What would you like to know about these curves?**\n"
+                response += "• I can explain the curve construction methodology\n"
+                response += "• I can analyze rate sensitivity\n"
+                response += "• I can help with curve interpolation"
             else:
-                response = "No yield curves available. Would you like me to generate some sample curves?"
+                response = "🔍 **No yield curves available.**\n\n"
+                response += "Would you like me to generate some sample curves? I can create:\n"
+                response += "• USD OIS curve\n"
+                response += "• EUR OIS curve\n"
+                response += "• GBP OIS curve"
             
             return {"response": response, "status": "success"}
         except Exception as e:
-            return {"response": f"Sorry, I couldn't retrieve the curves. Error: {str(e)}", "status": "error"}
+            return {"response": f"❌ Sorry, I couldn't retrieve the curves. Error: {str(e)}", "status": "error"}
     
     elif any(word in message for word in ["health", "status", "backend"]):
         try:
@@ -648,7 +695,7 @@ async def chat_post(request: dict = None):
     
     elif any(word in message for word in ["create", "new", "irs", "swap"]):
         return {
-            "response": "To create a new valuation run:\n\n1. Go to the main page\n2. Click 'Create New Run'\n3. Fill in the instrument details\n4. Submit to generate the valuation\n\nI can help you with the analysis once you have a run!",
+            "response": "🚀 **Let's create a new valuation run!**\n\n**Step-by-step process:**\n1. Go to the main page\n2. Click 'Create New Run'\n3. Fill in the instrument details\n4. Submit to generate the valuation\n\n**I can help you with:**\n• Understanding instrument types (IRS vs CCS)\n• Explaining valuation methodologies\n• Analyzing results once you have a run\n\n**What type of instrument are you looking to value?**",
             "status": "success"
         }
     
@@ -658,9 +705,21 @@ async def chat_post(request: dict = None):
             "status": "success"
         }
     
+    elif any(word in message for word in ["who", "what", "irshad", "person", "name"]):
+        return {
+            "response": "🤖 **I'm an AI valuation assistant!**\n\nI'm here to help you with:\n• Financial instrument valuations\n• Risk analysis and metrics\n• IFRS compliance questions\n• Yield curve analysis\n\nI don't have personal information about individuals, but I'm here to assist with your valuation needs! What would you like to know about the system?",
+            "status": "success"
+        }
+    
+    elif any(word in message for word in ["no", "nope", "not working", "broken", "error"]):
+        return {
+            "response": "😔 **I understand you're having issues.**\n\nLet me help troubleshoot:\n• **System Status**: I can check if everything is running properly\n• **Data Issues**: I can verify if runs and curves are available\n• **Technical Problems**: I can guide you through common solutions\n\n**What specific issue are you experiencing?**\n• Chat not responding properly?\n• Missing data or runs?\n• System errors?",
+            "status": "success"
+        }
+    
     else:
         return {
-            "response": f"I understand you're asking about '{message}'. I'm a valuation assistant specialized in financial instruments and IFRS compliance. Could you be more specific about what you'd like to know? For example:\n\n• 'Show me the latest runs'\n• 'What curves are available?'\n• 'Check system health'\n• 'Help me with IFRS compliance'",
+            "response": f"🤔 **I understand you're asking about '{message}'.**\n\nI'm your AI valuation assistant specialized in financial instruments and IFRS compliance. Let me help you with:\n\n**📊 Data & Analysis:**\n• 'Show me the latest runs' - View valuation results\n• 'What curves are available?' - See yield curves\n• 'Check system health' - Verify everything is working\n\n**💡 Guidance:**\n• 'Help me with IFRS compliance' - Regulatory questions\n• 'Create a new run' - Start a valuation\n• 'Explain methodology' - Understand the process\n\n**What would you like to explore?**",
             "status": "success"
         }
 
