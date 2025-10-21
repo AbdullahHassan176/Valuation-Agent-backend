@@ -30,13 +30,49 @@ class MongoDBClient:
             conn_preview = self.connection_string[:50] + "..." if len(self.connection_string) > 50 else self.connection_string
             print(f"🔍 Connecting to MongoDB: {conn_preview}")
             
-            # Try to connect with a timeout
-            self.client = AsyncIOMotorClient(
-                self.connection_string,
-                serverSelectionTimeoutMS=5000,  # 5 second timeout
-                connectTimeoutMS=5000,
-                socketTimeoutMS=5000
-            )
+            # For Azure Cosmos DB, use specific connection parameters
+            if "cosmos.azure.com" in self.connection_string or len(self.connection_string) > 100:
+                print("🔍 Detected Azure Cosmos DB - using optimized connection parameters")
+                try:
+                    self.client = AsyncIOMotorClient(
+                        self.connection_string,
+                        serverSelectionTimeoutMS=30000,  # 30 second timeout for Cosmos DB
+                        connectTimeoutMS=30000,
+                        socketTimeoutMS=30000,
+                        retryWrites=False,  # Disable retry writes for Cosmos DB
+                        tls=True,  # Enable TLS for Cosmos DB
+                        tlsAllowInvalidCertificates=False,
+                        tlsAllowInvalidHostnames=False,
+                        directConnection=False,  # Use replica set mode
+                        maxPoolSize=10,
+                        minPoolSize=1
+                    )
+                except UnicodeError as unicode_err:
+                    print(f"❌ Unicode error with connection string: {unicode_err}")
+                    print("🔍 Trying with URL encoding...")
+                    # Try to encode the connection string properly
+                    import urllib.parse
+                    encoded_conn = urllib.parse.quote(self.connection_string, safe='://@')
+                    self.client = AsyncIOMotorClient(
+                        encoded_conn,
+                        serverSelectionTimeoutMS=30000,
+                        connectTimeoutMS=30000,
+                        socketTimeoutMS=30000,
+                        retryWrites=False,
+                        tls=True,
+                        directConnection=False,
+                        maxPoolSize=10,
+                        minPoolSize=1
+                    )
+            else:
+                # Standard MongoDB connection
+                self.client = AsyncIOMotorClient(
+                    self.connection_string,
+                    serverSelectionTimeoutMS=5000,
+                    connectTimeoutMS=5000,
+                    socketTimeoutMS=5000
+                )
+            
             self.db = self.client[self.database_name]
             
             # Test connection with a simple ping
@@ -55,13 +91,16 @@ class MongoDBClient:
                 if self.client:
                     self.client.close()
                 
-                # Try with different parameters
+                # Try with minimal parameters for Cosmos DB
                 self.client = AsyncIOMotorClient(
                     self.connection_string,
-                    serverSelectionTimeoutMS=10000,
-                    connectTimeoutMS=10000,
-                    socketTimeoutMS=10000,
-                    retryWrites=False  # Disable retry writes for Cosmos DB
+                    serverSelectionTimeoutMS=60000,  # 60 second timeout
+                    connectTimeoutMS=60000,
+                    socketTimeoutMS=60000,
+                    retryWrites=False,
+                    directConnection=True,  # Try direct connection
+                    maxPoolSize=1,
+                    minPoolSize=1
                 )
                 self.db = self.client[self.database_name]
                 
