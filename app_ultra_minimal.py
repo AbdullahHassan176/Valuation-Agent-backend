@@ -1370,6 +1370,49 @@ async def test_create_simple_run():
             "error": str(e)
         }
 
+# Simple test endpoint to verify run creation
+@app.get("/api/test/verify-runs")
+async def test_verify_runs():
+    """Test endpoint to verify run creation and storage."""
+    global fallback_runs
+    try:
+        # Create a simple test run
+        test_run = {
+            "id": f"test-{int(datetime.now().timestamp() * 1000)}",
+            "name": "Test Run",
+            "type": "IRS",
+            "status": "completed",
+            "notional": 1000000,
+            "currency": "USD",
+            "tenor": "1Y",
+            "fixedRate": 0.03,
+            "floatingIndex": "SOFR",
+            "pv": 10000.0,
+            "pv01": 100.0,
+            "created_at": datetime.now().isoformat(),
+            "completed_at": datetime.now().isoformat(),
+            "progress": 100
+        }
+        
+        # Add to fallback storage
+        fallback_runs.append(test_run)
+        print(f"✅ Test run added: {test_run['id']}")
+        
+        return {
+            "success": True,
+            "test_run_id": test_run["id"],
+            "fallback_runs_count": len(fallback_runs),
+            "fallback_runs": fallback_runs
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in test_verify_runs: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "fallback_runs_count": len(fallback_runs)
+        }
+
 # Test endpoint to debug MongoDB issues
 @app.get("/api/test/mongodb-debug")
 async def test_mongodb_debug():
