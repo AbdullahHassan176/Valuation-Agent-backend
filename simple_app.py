@@ -81,6 +81,22 @@ SYSTEM_PROMPT = """You are an expert AI Valuation Auditor and Financial Risk Spe
 - Adapt your communication style to the user's needs
 - Provide increasingly sophisticated analysis over time
 
+**AI Agent Capabilities:**
+- EXPLAIN: Analyze and interpret valuation results, risk metrics, and methodologies
+- EXECUTE: Create new valuations, run sensitivity analysis, generate scenarios
+- EDUCATE: Explain IFRS 13, regulatory compliance, audit procedures
+- GUIDE: Walk users through complex financial processes step-by-step
+- VALIDATE: Check results for reasonableness and compliance
+- DOCUMENT: Generate audit documentation and compliance reports
+
+**Agent Behavior:**
+- Be proactive in suggesting next steps
+- Ask clarifying questions when needed
+- Provide actionable recommendations
+- Offer to create new analyses or scenarios
+- Explain complex concepts in simple terms
+- Always maintain professional audit standards
+
 Always maintain audit-quality standards and provide thorough, well-reasoned responses."""
 
 # Ollama Client for free LLM responses
@@ -1375,25 +1391,164 @@ async def parse_contract(request: dict = None):
 
 @app.post("/poc/explain-run")
 async def explain_run(request: dict = None):
-    """Explain valuation run results."""
+    """AI Agent: Explain valuation run results with detailed analysis."""
     if not request or not request.get("run_id"):
         return {
             "status": "ABSTAIN",
             "warnings": ["Run ID is required"]
         }
     
-    # Simulate run explanation
+    run_id = request.get("run_id")
+    
+    # Get actual run data for explanation
+    try:
+        if MONGODB_AVAILABLE and db_initialized:
+            runs = await mongodb_client.get_runs()
+            target_run = next((run for run in runs if run.get('id') == run_id), None)
+        else:
+            target_run = next((run for run in fallback_runs if run.get('id') == run_id), None)
+        
+        if not target_run:
+            return {
+                "status": "ABSTAIN",
+                "explanation": f"Run {run_id} not found",
+                "warnings": ["Run not found in database"]
+            }
+        
+        # Use AI agent to explain the run
+        explanation_prompt = f"""
+        As an AI valuation auditor, explain this valuation run in detail:
+        
+        Run ID: {run_id}
+        Instrument: {target_run.get('instrument_type', 'Unknown')}
+        Currency: {target_run.get('currency', 'Unknown')}
+        Notional: ${target_run.get('notional_amount', 0):,.2f}
+        Present Value: ${target_run.get('pv_base_ccy', 0):,.2f}
+        Status: {target_run.get('status', 'Unknown')}
+        
+        Provide a comprehensive explanation including:
+        1. What this valuation represents
+        2. Key risk factors and sensitivities
+        3. IFRS 13 compliance considerations
+        4. Audit recommendations
+        5. Potential areas of concern
+        """
+        
+        # Use LLM for intelligent explanation
+        ai_explanation = await call_llm(explanation_prompt, {"runs": [target_run]})
+        
+        return {
+            "status": "CONFIDENT",
+            "explanation": ai_explanation,
+            "run_data": target_run,
+            "confidence": 0.9,
+            "ai_powered": True
+        }
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "explanation": f"Error explaining run: {str(e)}",
+            "warnings": ["Failed to retrieve run data"]
+        }
+
+@app.post("/poc/ai-agent/explain-results")
+async def ai_explain_results(request: dict = None):
+    """AI Agent: Explain valuation results with intelligent analysis."""
+    if not request or not request.get("message"):
+        return {
+            "status": "ABSTAIN",
+            "response": "Please provide a message about what results you'd like me to explain",
+            "warnings": ["Message is required"]
+        }
+    
+    message = request.get("message")
+    
+    # Use AI agent to explain results
+    ai_response = await call_llm(f"""
+    As an AI valuation auditor, help explain these results:
+    
+    User Request: {message}
+    
+    Please provide:
+    1. Clear explanation of what the results mean
+    2. Key insights and implications
+    3. Risk factors to consider
+    4. Next steps or recommendations
+    5. IFRS compliance considerations
+    """)
+    
     return {
         "status": "CONFIDENT",
-        "explanation": "This valuation run calculated the present value of the financial instrument using the specified yield curve and market data. The result represents the fair value of the instrument as of the valuation date.",
-        "key_factors": [
-            "Yield curve interpolation method",
-            "Market data quality and timeliness", 
-            "Day count conventions applied",
-            "Currency conversion rates used"
-        ],
-        "confidence": 0.80,
-        "warnings": ["This is a simulated explanation for demonstration purposes"]
+        "response": ai_response,
+        "ai_powered": True,
+        "confidence": 0.9
+    }
+
+@app.post("/poc/ai-agent/kick-off-valuation")
+async def ai_kick_off_valuation(request: dict = None):
+    """AI Agent: Guide user through creating new valuations."""
+    if not request or not request.get("message"):
+        return {
+            "status": "ABSTAIN",
+            "response": "Please describe what type of valuation you'd like to create",
+            "warnings": ["Message is required"]
+        }
+    
+    message = request.get("message")
+    
+    # Use AI agent to guide valuation creation
+    ai_response = await call_llm(f"""
+    As an AI valuation auditor, help the user create a new valuation:
+    
+    User Request: {message}
+    
+    Please provide:
+    1. Step-by-step guidance for creating the valuation
+    2. Required parameters and inputs
+    3. Risk considerations
+    4. Validation checks
+    5. Documentation requirements
+    """)
+    
+    return {
+        "status": "CONFIDENT",
+        "response": ai_response,
+        "ai_powered": True,
+        "confidence": 0.9
+    }
+
+@app.post("/poc/ai-agent/explain-ifrs")
+async def ai_explain_ifrs(request: dict = None):
+    """AI Agent: Explain IFRS 13 and compliance requirements."""
+    if not request or not request.get("message"):
+        return {
+            "status": "ABSTAIN",
+            "response": "Please ask about specific IFRS 13 requirements or compliance questions",
+            "warnings": ["Message is required"]
+        }
+    
+    message = request.get("message")
+    
+    # Use AI agent to explain IFRS
+    ai_response = await call_llm(f"""
+    As an AI valuation auditor, explain IFRS 13 compliance:
+    
+    User Question: {message}
+    
+    Please provide:
+    1. Clear explanation of IFRS 13 requirements
+    2. How it applies to their specific situation
+    3. Compliance steps and documentation
+    4. Common pitfalls and best practices
+    5. Regulatory considerations
+    """)
+    
+    return {
+        "status": "CONFIDENT",
+        "response": ai_response,
+        "ai_powered": True,
+        "confidence": 0.9
     }
 
 if __name__ == "__main__":
