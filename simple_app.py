@@ -401,8 +401,103 @@ async def chat_get():
     return {"message": "Chat endpoint active", "status": "ready"}
 
 @app.post("/poc/chat")
-async def chat_post():
-    return {"response": "Chat endpoint working", "status": "success"}
+async def chat_post(request: dict = None):
+    """Process chat messages and provide intelligent responses."""
+    if not request or not request.get("message"):
+        return {
+            "response": "Hello! I'm your valuation assistant. How can I help you today?",
+            "status": "success"
+        }
+    
+    message = request.get("message", "").lower().strip()
+    
+    # Handle different types of queries
+    if any(word in message for word in ["hello", "hi", "hey", "good morning", "good afternoon"]):
+        return {
+            "response": "Hello! I'm your valuation assistant. I can help you with:\n• Analyzing valuation runs\n• Generating sensitivity scenarios\n• Exporting reports\n• IFRS-13 compliance questions\n\nWhat would you like to know?",
+            "status": "success"
+        }
+    
+    elif any(word in message for word in ["runs", "valuation", "latest", "show me"]):
+        try:
+            # Get recent runs
+            if MONGODB_AVAILABLE and db_initialized:
+                runs = await mongodb_client.get_runs(limit=5)
+            else:
+                runs = fallback_runs[-5:] if fallback_runs else []
+            
+            if runs:
+                response = f"Here are your recent valuation runs:\n\n"
+                for run in runs:
+                    response += f"• **{run.get('id', 'Unknown')}** - {run.get('instrument_type', 'Unknown')} ({run.get('currency', 'Unknown')})\n"
+                    response += f"  Status: {run.get('status', 'Unknown')}\n"
+                    response += f"  PV: ${run.get('pv_base_ccy', 0):,.2f}\n"
+                    response += f"  Notional: ${run.get('notional_amount', 0):,.0f}\n\n"
+            else:
+                response = "No valuation runs found. Would you like me to help you create one?"
+            
+            return {"response": response, "status": "success"}
+        except Exception as e:
+            return {"response": f"Sorry, I couldn't retrieve the runs. Error: {str(e)}", "status": "error"}
+    
+    elif any(word in message for word in ["curves", "yield", "rates"]):
+        try:
+            # Get available curves
+            if MONGODB_AVAILABLE and db_initialized:
+                curves = await mongodb_client.get_curves(limit=5)
+            else:
+                curves = fallback_curves[-5:] if fallback_curves else []
+            
+            if curves:
+                response = "Here are the available yield curves:\n\n"
+                for curve in curves:
+                    response += f"• **{curve.get('currency', 'Unknown')} {curve.get('type', 'Unknown')}**\n"
+                    response += f"  As of: {curve.get('as_of_date', 'Unknown')}\n"
+                    response += f"  Nodes: {len(curve.get('nodes', []))} points\n\n"
+            else:
+                response = "No yield curves available. Would you like me to generate some sample curves?"
+            
+            return {"response": response, "status": "success"}
+        except Exception as e:
+            return {"response": f"Sorry, I couldn't retrieve the curves. Error: {str(e)}", "status": "error"}
+    
+    elif any(word in message for word in ["health", "status", "backend"]):
+        try:
+            # Get system status
+            if MONGODB_AVAILABLE and db_initialized:
+                stats = await mongodb_client.get_database_stats()
+                response = f"**System Status:** ✅ Healthy\n\n"
+                response += f"**Database:** {stats.get('database_type', 'Unknown')}\n"
+                response += f"**Total Runs:** {stats.get('total_runs', 0)}\n"
+                response += f"**Total Curves:** {stats.get('total_curves', 0)}\n"
+                response += f"**Message:** {stats.get('message', 'All systems operational')}"
+            else:
+                response = "**System Status:** ⚠️ Using fallback storage\n\n"
+                response += f"**Runs in memory:** {len(fallback_runs)}\n"
+                response += f"**Curves in memory:** {len(fallback_curves)}\n"
+                response += "**Note:** MongoDB not configured - using in-memory storage"
+            
+            return {"response": response, "status": "success"}
+        except Exception as e:
+            return {"response": f"Sorry, I couldn't check the system status. Error: {str(e)}", "status": "error"}
+    
+    elif any(word in message for word in ["create", "new", "irs", "swap"]):
+        return {
+            "response": "To create a new valuation run:\n\n1. Go to the main page\n2. Click 'Create New Run'\n3. Fill in the instrument details\n4. Submit to generate the valuation\n\nI can help you with the analysis once you have a run!",
+            "status": "success"
+        }
+    
+    elif any(word in message for word in ["help", "what can you do", "capabilities"]):
+        return {
+            "response": "I'm your valuation assistant! Here's what I can do:\n\n**📊 Analysis:**\n• Show latest valuation runs\n• Analyze risk metrics\n• Generate sensitivity scenarios\n\n**📈 Data:**\n• Display available yield curves\n• Check system health\n• Export reports\n\n**📋 Compliance:**\n• Answer IFRS-13 questions\n• Explain valuation methodologies\n• Provide regulatory guidance\n\nWhat would you like to explore?",
+            "status": "success"
+        }
+    
+    else:
+        return {
+            "response": f"I understand you're asking about '{message}'. I'm a valuation assistant specialized in financial instruments and IFRS compliance. Could you be more specific about what you'd like to know? For example:\n\n• 'Show me the latest runs'\n• 'What curves are available?'\n• 'Check system health'\n• 'Help me with IFRS compliance'",
+            "status": "success"
+        }
 
 @app.get("/api/test/mongodb")
 async def test_mongodb():
