@@ -1065,7 +1065,8 @@ async def test_mongodb_debug():
             "mongodb_available": MONGODB_AVAILABLE,
             "connection_string_set": bool(MONGODB_CONNECTION_STRING),
             "database_name": MONGODB_DATABASE,
-            "connection_string_preview": MONGODB_CONNECTION_STRING[:50] + "..." if MONGODB_CONNECTION_STRING else "Not set"
+            "connection_string_preview": MONGODB_CONNECTION_STRING[:50] + "..." if MONGODB_CONNECTION_STRING else "Not set",
+            "connection_string_contains_cosmos": "cosmos.azure.com" in MONGODB_CONNECTION_STRING if MONGODB_CONNECTION_STRING else False
         }
         
         if mongodb_client and db_initialized:
@@ -1074,6 +1075,10 @@ async def test_mongodb_debug():
                 # Get actual database name being used
                 actual_db_name = mongodb_client.db.name
                 debug_info["actual_database_name"] = actual_db_name
+                
+                # Get the actual connection string from the client
+                if hasattr(mongodb_client, 'client') and mongodb_client.client:
+                    debug_info["client_hosts"] = str(mongodb_client.client.address)
                 
                 runs_count = await mongodb_client.db.runs.count_documents({})
                 debug_info["runs_count_direct"] = runs_count
@@ -1093,6 +1098,9 @@ async def test_mongodb_debug():
                 
             except Exception as e:
                 debug_info["mongodb_error"] = str(e)
+        else:
+            debug_info["fallback_runs_count"] = len(fallback_runs)
+            debug_info["fallback_curves_count"] = len(fallback_curves)
         
         return debug_info
         
