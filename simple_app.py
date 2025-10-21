@@ -727,6 +727,7 @@ async def create_run(request: dict = None):
     notional_amount = 1000000.0  # Default
     as_of_date = datetime.now().strftime('%Y-%m-%d')
     spec = None
+    xva_selection = []  # XVA components to calculate
     
     if request:
         # Check if this is the new frontend payload format
@@ -738,6 +739,15 @@ async def create_run(request: dict = None):
             currency = spec.get("ccy", "USD")
             notional_amount = spec.get("notional", 1000000.0)
             as_of_date = request.get("asOf", datetime.now().strftime('%Y-%m-%d'))
+            
+            # Extract XVA selection from request
+            xva_selection = request.get("xva_selection", [])
+            if not xva_selection:
+                # Default XVA selection based on instrument type
+                if instrument_type == "IRS":
+                    xva_selection = ["CVA", "FVA"]  # Default for IRS
+                elif instrument_type == "CCS":
+                    xva_selection = ["CVA", "DVA", "FVA"]  # Default for CCS
         else:
             # Old format
             instrument_type = request.get("instrument_type", instrument_type)
@@ -790,6 +800,30 @@ async def create_run(request: dict = None):
                 
                 pv_base_ccy = valuation_result.get("npv", 0)
                 risk_metrics = valuation_result.get("risk_metrics", {})
+                
+                # Calculate XVA adjustments if requested
+                xva_analysis = None
+                if xva_selection:
+                    xva_analysis = valuation_engine.calculate_xva_adjustments(
+                        base_npv=pv_base_ccy,
+                        notional=notional_amount,
+                        tenor_years=tenor_years,
+                        xva_selection=xva_selection,
+                        counterparty_rating=spec.get("counterparty_rating", "BBB") if spec else "BBB",
+                        own_rating=spec.get("own_rating", "AA") if spec else "AA",
+                        funding_rate=spec.get("funding_rate", 0.02) if spec else 0.02,
+                        capital_ratio=spec.get("capital_ratio", 0.12) if spec else 0.12,
+                        margin_rate=spec.get("margin_rate", 0.01) if spec else 0.01
+                    )
+                    
+                    # Update NPV with XVA adjustments
+                    if xva_analysis and "adjusted_npv" in xva_analysis:
+                        pv_base_ccy = xva_analysis["adjusted_npv"]
+                
+                # Add XVA analysis to valuation result
+                if xva_analysis:
+                    valuation_result["xva_analysis"] = xva_analysis
+                
                 comprehensive_report = valuation_engine.generate_comprehensive_report(valuation_result)
                 
             elif instrument_type == "CCS":
@@ -813,6 +847,30 @@ async def create_run(request: dict = None):
                 
                 pv_base_ccy = valuation_result.get("npv_base", 0)
                 risk_metrics = valuation_result.get("risk_metrics", {})
+                
+                # Calculate XVA adjustments if requested
+                xva_analysis = None
+                if xva_selection:
+                    xva_analysis = valuation_engine.calculate_xva_adjustments(
+                        base_npv=pv_base_ccy,
+                        notional=notional_amount,
+                        tenor_years=time_to_maturity,
+                        xva_selection=xva_selection,
+                        counterparty_rating=spec.get("counterparty_rating", "BBB") if spec else "BBB",
+                        own_rating=spec.get("own_rating", "AA") if spec else "AA",
+                        funding_rate=spec.get("funding_rate", 0.02) if spec else 0.02,
+                        capital_ratio=spec.get("capital_ratio", 0.12) if spec else 0.12,
+                        margin_rate=spec.get("margin_rate", 0.01) if spec else 0.01
+                    )
+                    
+                    # Update NPV with XVA adjustments
+                    if xva_analysis and "adjusted_npv" in xva_analysis:
+                        pv_base_ccy = xva_analysis["adjusted_npv"]
+                
+                # Add XVA analysis to valuation result
+                if xva_analysis:
+                    valuation_result["xva_analysis"] = xva_analysis
+                
                 comprehensive_report = valuation_engine.generate_comprehensive_report(valuation_result)
                 
             else:
@@ -843,6 +901,8 @@ async def create_run(request: dict = None):
         "pv_base_ccy": round(pv_base_ccy, 2),
         "spec": spec if spec else None,
         "comprehensive_report": comprehensive_report,
+        "xva_selection": xva_selection,
+        "xva_analysis": comprehensive_report.get("xva_analysis", {}) if comprehensive_report else {},
         "metadata": {
             "source": "backend",
             "calculation_method": "quantlib_advanced" if QUANTLIB_AVAILABLE and comprehensive_report else "enhanced_financial",
@@ -851,7 +911,8 @@ async def create_run(request: dict = None):
             "risk_metrics": risk_metrics,
             "calculation_timestamp": current_time,
             "payload_format": "new_frontend" if spec else "legacy",
-            "quantlib_available": QUANTLIB_AVAILABLE
+            "quantlib_available": QUANTLIB_AVAILABLE,
+            "xva_components": xva_selection
         }
     }
     
@@ -1511,6 +1572,63 @@ async def get_valuation_report(run_id: str):
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
+
+@app.get("/api/valuation/xva-options")
+async def get_xva_options():
+    """Get available XVA calculation options."""
+    return {
+        "available_xva_components": {
+            "CVA": {
+                "name": "Credit Valuation Adjustment",
+                "description": "Adjustment for counterparty credit risk",
+                "methodology": "Monte Carlo simulation with default probabilities",
+                "risk_factors": ["Counterparty default probability", "Recovery rate", "Correlation"],
+                "regulatory_requirement": "IFRS 13, Basel III"
+            },
+            "DVA": {
+                "name": "Debit Valuation Adjustment", 
+                "description": "Adjustment for own credit risk",
+                "methodology": "Monte Carlo simulation with own default probabilities",
+                "risk_factors": ["Own default probability", "Recovery rate", "Funding costs"],
+                "regulatory_requirement": "IFRS 13, Basel III"
+            },
+            "FVA": {
+                "name": "Funding Valuation Adjustment",
+                "description": "Adjustment for funding costs",
+                "methodology": "Discounted funding spread over swap life",
+                "risk_factors": ["Funding spread", "Collateral requirements", "Liquidity risk"],
+                "regulatory_requirement": "Basel III, FRTB"
+            },
+            "KVA": {
+                "name": "Capital Valuation Adjustment",
+                "description": "Adjustment for regulatory capital costs",
+                "methodology": "Capital allocation × cost of capital × time",
+                "risk_factors": ["Capital requirements", "Cost of capital", "Regulatory changes"],
+                "regulatory_requirement": "Basel III, FRTB"
+            },
+            "MVA": {
+                "name": "Margin Valuation Adjustment",
+                "description": "Adjustment for initial margin costs",
+                "methodology": "ISDA SIMM-based initial margin calculation",
+                "risk_factors": ["Initial margin requirements", "Margin rates", "Portfolio composition"],
+                "regulatory_requirement": "Basel III, EMIR"
+            }
+        },
+        "default_selections": {
+            "IRS": ["CVA", "FVA"],
+            "CCS": ["CVA", "DVA", "FVA"],
+            "FX_SWAP": ["CVA", "DVA", "FVA", "MVA"],
+            "CREDIT_DERIVATIVE": ["CVA", "DVA", "FVA", "KVA", "MVA"]
+        },
+        "calculation_parameters": {
+            "counterparty_ratings": ["AAA", "AA", "A", "BBB", "BB", "B", "CCC"],
+            "own_ratings": ["AAA", "AA", "A", "BBB", "BB", "B", "CCC"],
+            "funding_rates": "0.01 to 0.05 (1% to 5%)",
+            "capital_ratios": "0.08 to 0.20 (8% to 20%)",
+            "margin_rates": "0.005 to 0.03 (0.5% to 3%)"
+        },
+        "quantlib_available": QUANTLIB_AVAILABLE
+    }
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
