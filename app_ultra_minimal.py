@@ -9,6 +9,8 @@ from datetime import datetime
 import os
 import aiohttp
 import json
+from datetime import datetime
+from typing import Optional, Dict, Any, List
 
 # Create FastAPI app
 app = FastAPI(title="Valuation Backend - Ultra Minimal")
@@ -22,7 +24,170 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage
+# Startup event to initialize database
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup."""
+    global db_initialized
+    try:
+        if mongodb_client:
+            print("🔍 Initializing MongoDB connection...")
+            db_initialized = await mongodb_client.connect()
+            if db_initialized:
+                print("✅ MongoDB database initialized successfully")
+            else:
+                print("⚠️ MongoDB connection failed - using fallback storage")
+        else:
+            print("⚠️ MongoDB not configured - using fallback storage")
+    except Exception as e:
+        print(f"❌ Database initialization error: {e}")
+        db_initialized = False
+
+# MongoDB configuration
+MONGODB_CONNECTION_STRING = os.getenv("MONGODB_CONNECTION_STRING")
+MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "valuation-backend-server")
+USE_MONGODB = os.getenv("USE_MONGODB", "true").lower() == "true"
+
+# MongoDB client (will be initialized if available)
+mongodb_client = None
+db_initialized = False
+
+# Try to import and initialize MongoDB
+try:
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from pymongo import MongoClient
+    import asyncio
+    
+    class MongoDBClient:
+        """MongoDB client for Azure Cosmos DB for MongoDB."""
+        
+        def __init__(self):
+            self.connection_string = MONGODB_CONNECTION_STRING
+            self.database_name = MONGODB_DATABASE
+            self.client = None
+            self.db = None
+            
+        async def connect(self):
+            """Connect to MongoDB."""
+            try:
+                if not self.connection_string:
+                    print("❌ No MongoDB connection string provided")
+                    return False
+                    
+                print(f"🔍 Connecting to MongoDB...")
+                
+                # For Azure Cosmos DB, use specific connection parameters
+                if "cosmos.azure.com" in self.connection_string or len(self.connection_string) > 100:
+                    print("🔍 Detected Azure Cosmos DB - using optimized connection parameters")
+                    self.client = AsyncIOMotorClient(
+                        self.connection_string,
+                        serverSelectionTimeoutMS=30000,
+                        connectTimeoutMS=30000,
+                        socketTimeoutMS=30000,
+                        retryWrites=False,
+                        tls=True,
+                        directConnection=True,
+                        maxPoolSize=1,
+                        minPoolSize=1
+                    )
+                else:
+                    # Standard MongoDB connection
+                    self.client = AsyncIOMotorClient(
+                        self.connection_string,
+                        serverSelectionTimeoutMS=5000,
+                        connectTimeoutMS=5000,
+                        socketTimeoutMS=5000
+                    )
+                
+                self.db = self.client[self.database_name]
+                
+                # Test connection with a simple ping
+                await self.client.admin.command('ping')
+                print(f"✅ Connected to MongoDB database: {self.database_name}")
+                return True
+            except Exception as e:
+                print(f"❌ MongoDB connection failed: {e}")
+                return False
+                
+        async def create_run(self, run_data: Dict[str, Any]) -> str:
+            """Create a new run in MongoDB."""
+            try:
+                run_data["created_at"] = datetime.now()
+                result = await self.db.runs.insert_one(run_data)
+                return str(result.inserted_id)
+            except Exception as e:
+                print(f"❌ Error creating run: {e}")
+                return None
+                
+        async def get_runs(self) -> List[Dict[str, Any]]:
+            """Get all runs from MongoDB."""
+            try:
+                runs = []
+                async for run in self.db.runs.find().sort("created_at", -1):
+                    run["_id"] = str(run["_id"])
+                    runs.append(run)
+                return runs
+            except Exception as e:
+                print(f"❌ Error getting runs: {e}")
+                return []
+                
+        async def create_curve(self, curve_data: Dict[str, Any]) -> str:
+            """Create a new curve in MongoDB."""
+            try:
+                curve_data["created_at"] = datetime.now()
+                result = await self.db.curves.insert_one(curve_data)
+                return str(result.inserted_id)
+            except Exception as e:
+                print(f"❌ Error creating curve: {e}")
+                return None
+                
+        async def get_curves(self) -> List[Dict[str, Any]]:
+            """Get all curves from MongoDB."""
+            try:
+                curves = []
+                async for curve in self.db.curves.find().sort("created_at", -1):
+                    curve["_id"] = str(curve["_id"])
+                    curves.append(curve)
+                return curves
+            except Exception as e:
+                print(f"❌ Error getting curves: {e}")
+                return []
+                
+        async def get_database_stats(self) -> Dict[str, Any]:
+            """Get database statistics."""
+            try:
+                runs_count = await self.db.runs.count_documents({})
+                curves_count = await self.db.curves.count_documents({})
+                
+                return {
+                    "database_type": "mongodb",
+                    "status": "connected",
+                    "total_runs": runs_count,
+                    "total_curves": curves_count,
+                    "database_name": self.database_name
+                }
+            except Exception as e:
+                print(f"❌ Error getting database stats: {e}")
+                return {"error": str(e)}
+                
+        async def disconnect(self):
+            """Disconnect from MongoDB."""
+            if self.client:
+                self.client.close()
+    
+    # Initialize MongoDB client
+    if USE_MONGODB and MONGODB_CONNECTION_STRING:
+        mongodb_client = MongoDBClient()
+        print("✅ MongoDB client initialized")
+    else:
+        print("⚠️ MongoDB not configured - using fallback storage")
+        
+except ImportError as e:
+    print(f"⚠️ MongoDB libraries not available: {e}")
+    print("⚠️ Using fallback storage")
+    mongodb_client = None
+
+# In-memory storage (fallback)
 fallback_runs = [
     {
         "id": "run-001",
@@ -83,7 +248,18 @@ async def health():
 @app.get("/api/valuation/runs")
 async def get_runs():
     """Get all valuation runs."""
-    return fallback_runs
+    try:
+        if db_initialized and mongodb_client:
+            print("📊 Fetching runs from MongoDB...")
+            runs = await mongodb_client.get_runs()
+            print(f"✅ Retrieved {len(runs)} runs from MongoDB")
+            return runs
+        else:
+            print("📊 Using fallback runs storage")
+            return fallback_runs
+    except Exception as e:
+        print(f"❌ Error getting runs: {e}")
+        return fallback_runs
 
 @app.post("/api/valuation/runs")
 async def create_run(request: dict):
@@ -97,16 +273,41 @@ async def create_run(request: dict):
             "status": "completed",
             "created_at": datetime.now().isoformat()
         }
-        fallback_runs.append(new_run)
+        
+        if db_initialized and mongodb_client:
+            print("💾 Storing run in MongoDB...")
+            mongo_id = await mongodb_client.create_run(new_run)
+            if mongo_id:
+                new_run["mongo_id"] = mongo_id
+                print(f"✅ Run stored in MongoDB with ID: {mongo_id}")
+            else:
+                print("⚠️ Failed to store in MongoDB, using fallback")
+                fallback_runs.append(new_run)
+        else:
+            print("💾 Storing run in fallback storage...")
+            fallback_runs.append(new_run)
+            
         return new_run
     except Exception as e:
+        print(f"❌ Error creating run: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Curves endpoint
 @app.get("/api/valuation/curves")
 async def get_curves():
     """Get all yield curves."""
-    return fallback_curves
+    try:
+        if db_initialized and mongodb_client:
+            print("📈 Fetching curves from MongoDB...")
+            curves = await mongodb_client.get_curves()
+            print(f"✅ Retrieved {len(curves)} curves from MongoDB")
+            return curves if curves else fallback_curves
+        else:
+            print("📈 Using fallback curves storage")
+            return fallback_curves
+    except Exception as e:
+        print(f"❌ Error getting curves: {e}")
+        return fallback_curves
 
 # Groq LLM configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -258,12 +459,86 @@ async def explain_run_endpoint(request: dict):
 @app.get("/api/database/status")
 async def get_database_status():
     """Get database status."""
-    return {
-        "database_type": "fallback",
-        "status": "connected",
-        "total_runs": len(fallback_runs),
-        "total_curves": len(fallback_curves)
-    }
+    try:
+        if db_initialized and mongodb_client:
+            print("📊 Getting MongoDB database status...")
+            stats = await mongodb_client.get_database_stats()
+            return stats
+        else:
+            return {
+                "database_type": "fallback",
+                "status": "connected",
+                "total_runs": len(fallback_runs),
+                "total_curves": len(fallback_curves),
+                "mongodb_configured": bool(MONGODB_CONNECTION_STRING),
+                "mongodb_initialized": db_initialized
+            }
+    except Exception as e:
+        print(f"❌ Error getting database status: {e}")
+        return {
+            "database_type": "error",
+            "status": "error",
+            "error": str(e)
+        }
+
+# MongoDB test endpoint
+@app.get("/api/test/mongodb")
+async def test_mongodb():
+    """Test MongoDB connection and create a test run."""
+    try:
+        if not mongodb_client:
+            return {
+                "mongodb_available": False,
+                "error": "MongoDB client not initialized",
+                "connection_string_present": bool(MONGODB_CONNECTION_STRING),
+                "use_mongodb": USE_MONGODB
+            }
+        
+        if not db_initialized:
+            return {
+                "mongodb_available": False,
+                "error": "MongoDB not connected",
+                "connection_string_present": bool(MONGODB_CONNECTION_STRING),
+                "use_mongodb": USE_MONGODB
+            }
+        
+        # Create a test run
+        test_run = {
+            "id": "test-mongodb-run",
+            "asOf": datetime.now().strftime("%Y-%m-%d"),
+            "spec": {
+                "ccy": "USD",
+                "notional": 1000000,
+                "test": True
+            },
+            "pv_base_ccy": 0.0,
+            "status": "test",
+            "created_at": datetime.now().isoformat()
+        }
+        
+        mongo_id = await mongodb_client.create_run(test_run)
+        
+        # Get database stats
+        stats = await mongodb_client.get_database_stats()
+        
+        return {
+            "mongodb_available": True,
+            "mongodb_connected": True,
+            "test_run_created": bool(mongo_id),
+            "mongo_id": mongo_id,
+            "database_stats": stats,
+            "connection_string_present": bool(MONGODB_CONNECTION_STRING),
+            "database_name": MONGODB_DATABASE
+        }
+        
+    except Exception as e:
+        print(f"❌ MongoDB test error: {e}")
+        return {
+            "mongodb_available": False,
+            "error": str(e),
+            "connection_string_present": bool(MONGODB_CONNECTION_STRING),
+            "use_mongodb": USE_MONGODB
+        }
 
 # Groq configuration test endpoint
 @app.get("/api/test/groq-config")
