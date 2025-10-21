@@ -736,6 +736,7 @@ async def create_run(request: dict):
         print(f"🔍 Attempting to store run: {new_run}")
         
         # Try MongoDB connection on demand
+        global db_initialized
         if mongodb_client and not db_initialized:
             print("🔍 Attempting MongoDB connection on demand...")
             try:
