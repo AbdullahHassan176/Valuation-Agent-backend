@@ -46,45 +46,52 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 USE_GROQ = os.getenv("USE_GROQ", "false").lower() == "true"
 
 # System prompt for the AI valuation auditor
-SYSTEM_PROMPT = """You are a friendly AI valuation assistant with expertise in financial analysis and IFRS compliance.
+SYSTEM_PROMPT = """You are a senior quantitative risk analyst and valuation specialist with deep expertise in derivatives pricing, XVA calculations, and regulatory compliance.
 
 **Your Role:**
-- Help users with valuation questions and analysis
-- Provide clear, concise explanations
-- Be conversational and approachable
-- Focus on what the user actually needs
+- Provide technical analysis of complex financial instruments
+- Explain sophisticated quantitative models and methodologies
+- Discuss risk metrics, sensitivities, and regulatory requirements
+- Use precise financial terminology and quantitative concepts
 
 **Communication Style:**
-- Be conversational and friendly
-- Keep responses concise and focused
-- Ask one question at a time
-- Avoid information dumps
-- Use simple language when possible
-- Be helpful but not overwhelming
+- Be technically precise and sophisticated
+- Use quantitative finance terminology appropriately
+- Reference specific models, methodologies, and frameworks
+- Provide detailed technical explanations when requested
+- Ask probing questions about model parameters and assumptions
+
+**Technical Expertise Areas:**
+- Interest Rate Swaps (IRS) and Hull-White models
+- Credit Valuation Adjustment (CVA) and XVA calculations
+- IFRS 13 fair value measurement and embedded derivatives
+- Risk metrics: DV01, duration, convexity, VaR, ES
+- Yield curve construction and calibration
+- Monte Carlo simulation and numerical methods
+- Regulatory frameworks and compliance requirements
 
 **Available Data:**
-- Valuation runs and their results
+- Valuation runs with present values and risk metrics
 - Yield curves and market data
-- System status
+- System status and model parameters
 
 **Response Guidelines:**
-- Keep responses under 3-4 sentences unless specifically asked for details
-- Ask one clarifying question at a time
-- Don't list all capabilities unless asked
-- Focus on the user's specific question
-- Be conversational, not formal
-- Avoid bullet points and long lists unless necessary
+- Use technical language appropriate for quantitative analysts
+- Reference specific models (Hull-White, Black-Scholes, etc.)
+- Discuss calibration, sensitivity analysis, and model validation
+- Ask about specific parameters, assumptions, or methodologies
+- Provide detailed technical explanations when appropriate
 
 **Special Easter Egg:**
 - If asked about "Irshad" or "who is Irshad", respond with a funny roast about him being old, washed up, a bad golfer, having terrible style, being an accountant, etc. Make it hilarious and creative!
 
-**Example Good Response:**
-"I can help you analyze those valuation runs. What specific aspect would you like to focus on - the present values, risk metrics, or something else?"
+**Example Technical Response:**
+"I can analyze the Hull-White model calibration for your IRS portfolio. What specific parameters are you using for mean reversion and volatility? Are you implementing the extended Vasicek framework or the standard Hull-White formulation?"
 
 **Example Bad Response:**
-"I have extensive capabilities in valuation calculations, risk analysis, audit procedures, regulatory compliance, market data analysis, sensitivity analysis, XVA calculations, credit risk assessment, and counterparty analysis. I can perform calculations for various financial instruments including Interest Rate Swaps, Credit Default Swaps, Bonds, Derivatives, and other complex financial instruments..."
+"I can help with valuations and risk analysis. What would you like to know about your financial instruments?"
 
-Be helpful, concise, and conversational."""
+Be technically sophisticated, precise, and quantitative."""
 
 # Ollama Client for free LLM responses
 async def call_ollama(user_message: str, context_data: Dict[str, Any] = None) -> str:
@@ -327,41 +334,41 @@ def generate_fallback_response(message: str, context_data: Dict[str, Any]) -> st
     
     # Greeting responses
     if any(word in user_message for word in ["hello", "hi", "hey", "good morning", "good afternoon"]):
-        return f"Hi there! I'm your valuation assistant. I can see you have {len(runs)} valuation runs and {len(curves)} yield curves available. What would you like to work on today?"
+        return f"Good day. I'm your quantitative risk analyst. I can see you have {len(runs)} valuation runs and {len(curves)} yield curves in your portfolio. Which instrument would you like me to analyze - the IRS or CCS positions?"
 
     # Create new valuation run
     elif any(word in user_message for word in ["create", "new", "irs", "swap", "valuation run"]):
-        return "I can help you create a new valuation run. What type of instrument are you looking to value?"
+        return "I can help you set up a new valuation run. What instrument type are you pricing - vanilla IRS, cross-currency swap, or something more exotic? What's your preferred model - Hull-White, Black-Derman-Toy, or another framework?"
 
     # Runs analysis
     elif any(word in user_message for word in ["runs", "valuation", "latest", "show me"]):
         if runs:
-            return f"I can see you have {len(runs)} valuation runs. What specific aspect would you like me to analyze?"
+            return f"I can see you have {len(runs)} valuation runs in your portfolio. Which specific risk metrics would you like me to analyze - DV01, duration, convexity, or the Hull-White model parameters?"
         else:
-            return "No valuation runs found. I can help you create new ones if you'd like."
+            return "No valuation runs found. I can help you set up new positions with proper model calibration."
 
     # Curves analysis
     elif any(word in user_message for word in ["curves", "yield", "rates"]):
         if curves:
-            return f"You have {len(curves)} yield curves available. What would you like to know about them?"
+            return f"You have {len(curves)} yield curves available. Are you looking to analyze the curve construction methodology, calibration parameters, or sensitivity to curve shifts?"
         else:
-            return "No yield curves available. I can help you work with them once you have data."
+            return "No yield curves available. I can help you construct curves using bootstrapping or parametric methods."
 
     # IFRS and compliance
     elif any(word in user_message for word in ["ifrs", "compliance", "audit", "fair value"]):
-        return "I can help with IFRS 13 compliance questions. What specific area are you working on?"
+        return "I can help with IFRS 13 fair value measurement and embedded derivative analysis. Are you working on Level 1, 2, or 3 fair value hierarchy classifications?"
 
     # Help and capabilities
     elif any(word in user_message for word in ["help", "what can you do", "capabilities", "what cna you do"]):
-        return f"I can help you analyze your {len(runs)} valuation runs and {len(curves)} yield curves. What would you like to focus on?"
+        return f"I can help you analyze your {len(runs)} valuation runs and {len(curves)} yield curves using quantitative methods. What specific risk metrics or model parameters would you like to examine?"
 
     # Credit Valuation Adjustment (CVA)
     elif any(word in user_message for word in ["cva", "credit valuation adjustment", "credit risk", "counterparty risk"]):
-        return "I can help with CVA analysis. What specific aspect of credit valuation adjustments are you working on?"
+        return "I can help with CVA calculations using Monte Carlo simulation. Are you implementing the unilateral CVA formula or the bilateral CVA/DVA framework? What's your exposure simulation methodology?"
 
     # XVA (Cross Valuation Adjustments)
     elif any(word in user_message for word in ["xva", "fva", "kva", "mva", "valuation adjustment"]):
-        return "I can help with XVA analysis. Which adjustment are you working on - CVA, DVA, FVA, or something else?"
+        return "I can help with XVA analysis. Which adjustment are you implementing - CVA, DVA, FVA, KVA, or MVA? Are you using the ISDA SIMM methodology for capital requirements?"
 
     # Irshad roasts (Easter egg) - Check for various forms of the question
     elif any(word in user_message for word in ["irshad", "who is irshad", "tell me about irshad", "what about irshad"]):
@@ -380,12 +387,24 @@ def generate_fallback_response(message: str, context_data: Dict[str, Any]) -> st
         ]
         return random.choice(roasts)
 
+    # Hull-White model questions
+    elif any(word in user_message for word in ["hull white", "hw1f", "hull-white", "one factor", "mean reversion"]):
+        return "I can help with Hull-White one-factor model implementation. Are you looking at the extended Vasicek framework with mean reversion parameter α and volatility σ? What's your calibration methodology - historical or implied volatility?"
+
+    # Interest Rate Swaps
+    elif any(word in user_message for word in ["irs", "interest rate swap", "swap", "fixed rate", "floating rate"]):
+        return "I can help with Interest Rate Swap analysis. Are you pricing vanilla IRS, basis swaps, or more complex structures? What's your discounting methodology - single curve or multi-curve framework?"
+
+    # Embedded derivatives
+    elif any(word in user_message for word in ["embedded", "derivative", "host contract", "detachable"]):
+        return "I can help with embedded derivative analysis under IFRS 9. Are you dealing with detachable or non-detachable embedded derivatives? What's the host contract classification?"
+
     # System health and status
     elif any(word in user_message for word in ["health", "status", "system", "fallback"]):
         return f"System is in {system_status} with {len(runs)} runs and {len(curves)} curves. What would you like to check?"
 
     else:
-        return f"I can help you with your valuation analysis. You have {len(runs)} runs and {len(curves)} curves available. What would you like to focus on?"
+        return f"I can help you with quantitative analysis of your {len(runs)} valuation runs and {len(curves)} yield curves. What specific risk metrics or model parameters would you like to examine?"
 
 # Initialize MongoDB connection
 async def init_database():
