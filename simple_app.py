@@ -28,6 +28,17 @@ except ImportError as e:
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
+# Ollama Configuration (Free Alternative)
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+USE_OLLAMA = os.getenv("USE_OLLAMA", "false").lower() == "true"
+
+# Groq Configuration (Free Cloud Alternative)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama3-8b-8192")
+USE_GROQ = os.getenv("USE_GROQ", "false").lower() == "true"
+
 # System prompt for the AI valuation auditor
 SYSTEM_PROMPT = """You are an expert AI Valuation Auditor and Financial Risk Specialist with deep expertise in:
 
@@ -72,14 +83,145 @@ SYSTEM_PROMPT = """You are an expert AI Valuation Auditor and Financial Risk Spe
 
 Always maintain audit-quality standards and provide thorough, well-reasoned responses."""
 
+# Ollama Client for free LLM responses
+async def call_ollama(user_message: str, context_data: Dict[str, Any] = None) -> str:
+    """Call Ollama LLM with user message and context data."""
+    print(f"🔍 Calling Ollama with message: {user_message[:50]}...")
+    print(f"🔍 Ollama URL: {OLLAMA_BASE_URL}")
+    print(f"🔍 Model: {OLLAMA_MODEL}")
+    
+    try:
+        # Prepare context information
+        context_info = ""
+        if context_data:
+            if context_data.get("runs"):
+                context_info += f"\n**Available Valuation Runs:**\n"
+                for run in context_data["runs"][:3]:
+                    context_info += f"- {run.get('id', 'Unknown')}: {run.get('instrument_type', 'Unknown')} ({run.get('currency', 'Unknown')}) - PV: ${run.get('pv_base_ccy', 0):,.2f}\n"
+            
+            if context_data.get("curves"):
+                context_info += f"\n**Available Yield Curves:**\n"
+                for curve in context_data["curves"][:3]:
+                    context_info += f"- {curve.get('currency', 'Unknown')} {curve.get('type', 'Unknown')}: {len(curve.get('nodes', []))} points\n"
+            
+            if context_data.get("system_status"):
+                context_info += f"\n**System Status:** {context_data['system_status']}\n"
+        
+        # Prepare full prompt
+        full_prompt = f"{SYSTEM_PROMPT}\n\nUser Message: {user_message}\n\n{context_info}"
+        
+        # Call Ollama API
+        async with aiohttp.ClientSession() as session:
+            payload = {
+                "model": OLLAMA_MODEL,
+                "prompt": full_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                    "max_tokens": 1000
+                }
+            }
+            
+            async with session.post(f"{OLLAMA_BASE_URL}/api/generate", 
+                                   json=payload) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    print(f"✅ Ollama response received")
+                    return data.get("response", "No response from Ollama")
+                else:
+                    error_text = await response.text()
+                    print(f"❌ Ollama error: {response.status} - {error_text}")
+                    return f"Ollama API error: {response.status} - {error_text}"
+                    
+    except Exception as e:
+        print(f"❌ Ollama exception: {e}")
+        return f"Error calling Ollama: {str(e)}"
+
+# Groq Client for free cloud LLM responses
+async def call_groq(user_message: str, context_data: Dict[str, Any] = None) -> str:
+    """Call Groq LLM with user message and context data."""
+    if not GROQ_API_KEY:
+        print("❌ GROQ_API_KEY not configured")
+        return "Groq API key not configured"
+    
+    print(f"🔍 Calling Groq with message: {user_message[:50]}...")
+    print(f"🔍 Groq URL: {GROQ_BASE_URL}")
+    print(f"🔍 Model: {GROQ_MODEL}")
+    
+    try:
+        # Prepare context information
+        context_info = ""
+        if context_data:
+            if context_data.get("runs"):
+                context_info += f"\n**Available Valuation Runs:**\n"
+                for run in context_data["runs"][:3]:
+                    context_info += f"- {run.get('id', 'Unknown')}: {run.get('instrument_type', 'Unknown')} ({run.get('currency', 'Unknown')}) - PV: ${run.get('pv_base_ccy', 0):,.2f}\n"
+            
+            if context_data.get("curves"):
+                context_info += f"\n**Available Yield Curves:**\n"
+                for curve in context_data["curves"][:3]:
+                    context_info += f"- {curve.get('currency', 'Unknown')} {curve.get('type', 'Unknown')}: {len(curve.get('nodes', []))} points\n"
+            
+            if context_data.get("system_status"):
+                context_info += f"\n**System Status:** {context_data['system_status']}\n"
+        
+        # Prepare messages for Groq (OpenAI-compatible API)
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": f"{user_message}\n\n{context_info}"}
+        ]
+        
+        # Call Groq API
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": GROQ_MODEL,
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 1000
+            }
+            
+            async with session.post(f"{GROQ_BASE_URL}/chat/completions", 
+                                   headers=headers, 
+                                   json=payload) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    print(f"✅ Groq response received")
+                    return data["choices"][0]["message"]["content"]
+                else:
+                    error_text = await response.text()
+                    print(f"❌ Groq error: {response.status} - {error_text}")
+                    return f"Groq API error: {response.status} - {error_text}"
+                    
+    except Exception as e:
+        print(f"❌ Groq exception: {e}")
+        return f"Error calling Groq: {str(e)}"
+
 # LLM Client for AI responses
 async def call_llm(user_message: str, context_data: Dict[str, Any] = None) -> str:
     """Call LLM with user message and context data."""
+    
+    # Try Groq first if enabled (free cloud option)
+    if USE_GROQ:
+        print("🔍 Using Groq LLM")
+        return await call_groq(user_message, context_data)
+    
+    # Try Ollama if enabled (free local option)
+    if USE_OLLAMA:
+        print("🔍 Using Ollama LLM")
+        return await call_ollama(user_message, context_data)
+    
+    # Fallback to OpenAI
     if not OPENAI_API_KEY:
         print("❌ OPENAI_API_KEY not configured")
         return "I'm sorry, but I don't have access to the AI language model right now. Please check the configuration."
     
-    print(f"🔍 Calling LLM with message: {user_message[:50]}...")
+    print(f"🔍 Calling OpenAI LLM with message: {user_message[:50]}...")
     print(f"🔍 API Key configured: {bool(OPENAI_API_KEY)}")
     print(f"🔍 Base URL: {OPENAI_BASE_URL}")
     
