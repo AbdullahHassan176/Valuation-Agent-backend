@@ -13,10 +13,10 @@ sys.path.insert(0, str(current_dir))
 
 print(f"🔍 Starting ultra-minimal backend service from: {current_dir}")
 
-# Import and run the ultra-minimal app
+# Import and run the simple startup app
 try:
-    from app_ultra_minimal import app
-    print("✅ Ultra-minimal app imported successfully")
+    from app_simple_startup import app
+    print("✅ Simple startup app imported successfully")
     
     if __name__ == "__main__":
         import uvicorn
