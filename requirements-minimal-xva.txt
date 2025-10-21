@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+requests
+aiohttp
+pymongo
+motor
+numpy
+scipy

@@ -3,10 +3,17 @@ QuantLib-based valuation engine for IRS and CCS instruments.
 Provides comprehensive financial calculations with detailed reporting.
 """
 
-import QuantLib as ql
+# Try to import QuantLib, fallback to simplified calculations
+try:
+    import QuantLib as ql
+    QUANTLIB_AVAILABLE = True
+except ImportError:
+    QUANTLIB_AVAILABLE = False
+    print("⚠️ QuantLib not available, using simplified calculations")
+
 import numpy as np
 import pandas as pd
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Dict, List, Any, Optional, Tuple
 import json
 import math
@@ -21,8 +28,17 @@ class QuantLibValuationEngine:
         self.frequency = ql.Annual
         
     def create_yield_curve(self, rates: List[float], tenors: List[float], 
-                          curve_type: str = "zero") -> ql.YieldTermStructure:
+                          curve_type: str = "zero"):
         """Create a yield curve from market rates."""
+        if not QUANTLIB_AVAILABLE:
+            # Return simplified curve data for fallback calculations
+            return {
+                "rates": rates,
+                "tenors": tenors,
+                "type": curve_type,
+                "simplified": True
+            }
+        
         try:
             # Convert tenors to QuantLib periods
             periods = []
@@ -82,6 +98,9 @@ class QuantLibValuationEngine:
                                 curve_rates: List[float] = None,
                                 curve_tenors: List[float] = None) -> Dict[str, Any]:
         """Value an Interest Rate Swap using QuantLib."""
+        if not QUANTLIB_AVAILABLE:
+            return self._simplified_irs_valuation(notional, fixed_rate, tenor_years, frequency, curve_rates, curve_tenors)
+        
         try:
             # Set up evaluation date
             ql.Settings.instance().evaluationDate = ql.Date.todaysDate()
@@ -198,6 +217,11 @@ class QuantLibValuationEngine:
                                  frequency: str = "SemiAnnual",
                                  fx_rate: float = 1.0) -> Dict[str, Any]:
         """Value a Cross Currency Swap using QuantLib."""
+        if not QUANTLIB_AVAILABLE:
+            return self._simplified_ccs_valuation(notional_base, notional_quote, base_currency, 
+                                                 quote_currency, fixed_rate_base, fixed_rate_quote, 
+                                                 tenor_years, frequency, fx_rate)
+        
         try:
             # Set up evaluation date
             ql.Settings.instance().evaluationDate = ql.Date.todaysDate()
@@ -670,6 +694,153 @@ class QuantLibValuationEngine:
         mva = initial_margin * funding_cost * tenor
         
         return mva if npv > 0 else -mva  # MVA reduces positive NPV
+    
+    def _simplified_irs_valuation(self, notional: float, fixed_rate: float, 
+                                 tenor_years: float, frequency: str,
+                                 curve_rates: List[float], curve_tenors: List[float]) -> Dict[str, Any]:
+        """Simplified IRS valuation without QuantLib."""
+        try:
+            # Simple present value calculation
+            if curve_rates and len(curve_rates) > 0:
+                # Use average rate from curve
+                avg_rate = sum(curve_rates) / len(curve_rates)
+            else:
+                avg_rate = 0.03  # 3% default
+            
+            # Calculate present value using simplified formula
+            discount_factor = 1 / (1 + avg_rate) ** tenor_years
+            pv = notional * (fixed_rate - avg_rate) * tenor_years * discount_factor
+            
+            # Calculate risk metrics
+            risk_metrics = {
+                "dv01": pv * 0.01,  # Simplified DV01
+                "duration": tenor_years * 0.8,  # Simplified duration
+                "convexity": tenor_years * 0.1,  # Simplified convexity
+                "var_1d_99pct": abs(pv) * 0.05,  # Simplified VaR
+                "es_1d_99pct": abs(pv) * 0.07,  # Simplified ES
+                "npv": pv,
+                "notional": notional,
+                "leverage": abs(pv / notional) if notional != 0 else 0
+            }
+            
+            return {
+                "instrument_type": "Interest Rate Swap",
+                "notional": notional,
+                "fixed_rate": fixed_rate,
+                "fair_rate": avg_rate,
+                "tenor_years": tenor_years,
+                "frequency": frequency,
+                "npv": pv,
+                "annuity": tenor_years,
+                "cash_flows": self._simplified_cash_flows(notional, fixed_rate, tenor_years, frequency),
+                "risk_metrics": risk_metrics,
+                "methodology": self._simplified_methodology("IRS"),
+                "valuation_date": datetime.now().isoformat(),
+                "curve_rates": curve_rates or [0.01, 0.02, 0.03, 0.04, 0.05],
+                "curve_tenors": curve_tenors or [0.25, 0.5, 1.0, 2.0, 5.0],
+                "simplified": True
+            }
+        except Exception as e:
+            return self._create_error_response("IRS", str(e))
+    
+    def _simplified_ccs_valuation(self, notional_base: float, notional_quote: float,
+                                base_currency: str, quote_currency: str,
+                                fixed_rate_base: float, fixed_rate_quote: float,
+                                tenor_years: float, frequency: str, fx_rate: float) -> Dict[str, Any]:
+        """Simplified CCS valuation without QuantLib."""
+        try:
+            # Simple cross-currency calculation
+            base_rate = 0.03  # 3% base currency rate
+            quote_rate = 0.02  # 2% quote currency rate (typically lower)
+            
+            # Calculate base currency NPV
+            base_pv = notional_base * (fixed_rate_base - base_rate) * tenor_years / (1 + base_rate) ** tenor_years
+            
+            # Calculate quote currency NPV (converted to base)
+            quote_pv = notional_quote * (fixed_rate_quote - quote_rate) * tenor_years / (1 + quote_rate) ** tenor_years
+            quote_pv_base = quote_pv * fx_rate
+            
+            # Total NPV
+            total_npv = base_pv - quote_pv_base
+            
+            # Risk metrics
+            risk_metrics = {
+                "dv01": total_npv * 0.01,
+                "duration": tenor_years * 0.8,
+                "convexity": tenor_years * 0.1,
+                "var_1d_99pct": abs(total_npv) * 0.05,
+                "es_1d_99pct": abs(total_npv) * 0.07,
+                "npv": total_npv,
+                "notional": notional_base,
+                "leverage": abs(total_npv / notional_base) if notional_base != 0 else 0
+            }
+            
+            return {
+                "instrument_type": "Cross Currency Swap",
+                "notional_base": notional_base,
+                "notional_quote": notional_quote,
+                "base_currency": base_currency,
+                "quote_currency": quote_currency,
+                "fixed_rate_base": fixed_rate_base,
+                "fixed_rate_quote": fixed_rate_quote,
+                "fair_rate_base": base_rate,
+                "fair_rate_quote": quote_rate,
+                "tenor_years": tenor_years,
+                "frequency": frequency,
+                "fx_rate": fx_rate,
+                "npv_base": total_npv,
+                "npv_quote": total_npv / fx_rate,
+                "cash_flows": self._simplified_cash_flows(notional_base, fixed_rate_base, tenor_years, frequency),
+                "risk_metrics": risk_metrics,
+                "methodology": self._simplified_methodology("CCS"),
+                "valuation_date": datetime.now().isoformat(),
+                "base_curve_rates": [0.01, 0.02, 0.03, 0.04, 0.05],
+                "quote_curve_rates": [0.005, 0.015, 0.025, 0.035, 0.045],
+                "curve_tenors": [0.25, 0.5, 1.0, 2.0, 5.0],
+                "simplified": True
+            }
+        except Exception as e:
+            return self._create_error_response("CCS", str(e))
+    
+    def _simplified_cash_flows(self, notional: float, rate: float, tenor: float, frequency: str) -> List[Dict[str, Any]]:
+        """Generate simplified cash flows."""
+        cash_flows = []
+        periods_per_year = 2 if frequency == "SemiAnnual" else 1
+        total_periods = int(tenor * periods_per_year)
+        
+        for i in range(total_periods):
+            payment_date = datetime.now() + timedelta(days=365 * (i + 1) / periods_per_year)
+            amount = notional * rate / periods_per_year
+            cash_flows.append({
+                "date": payment_date.isoformat(),
+                "amount": amount,
+                "type": "Fixed",
+                "currency": "Base",
+                "leg": "Fixed"
+            })
+        
+        return cash_flows
+    
+    def _simplified_methodology(self, instrument_type: str) -> Dict[str, Any]:
+        """Generate simplified methodology."""
+        return {
+            "valuation_framework": f"Simplified {instrument_type} Valuation",
+            "methodology": "Simplified DCF calculation without QuantLib",
+            "assumptions": {
+                "calculation_method": "Simplified",
+                "quantlib_available": False,
+                "fallback_mode": True
+            },
+            "formulae": {
+                "present_value": "Notional × (Fixed Rate - Market Rate) × Time × Discount Factor",
+                "discount_factor": "1 / (1 + Market Rate)^Time"
+            },
+            "risk_factors": [
+                "Interest Rate Risk",
+                "Credit Risk",
+                "Liquidity Risk"
+            ]
+        }
 
     def generate_comprehensive_report(self, valuation_result: Dict[str, Any]) -> Dict[str, Any]:
         """Generate a comprehensive valuation report."""
