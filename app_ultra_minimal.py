@@ -440,6 +440,11 @@ async def get_runs():
             runs = await mongodb_client.get_runs()
             print(f"✅ Retrieved {len(runs)} runs from MongoDB")
             
+            # If MongoDB returns empty results, fall back to in-memory storage
+            if not runs:
+                print("⚠️ MongoDB returned empty results, using fallback storage")
+                return fallback_runs
+            
             # Transform runs to match frontend interface
             transformed_runs = []
             for run in runs:
@@ -825,8 +830,36 @@ async def get_database_status():
     try:
         if db_initialized and mongodb_client:
             print("📊 Getting MongoDB database status...")
-            stats = await mongodb_client.get_database_stats()
-            return stats
+            # Test if MongoDB is actually working by trying to get runs
+            try:
+                runs = await mongodb_client.get_runs()
+                if runs:
+                    # MongoDB is working
+                    stats = await mongodb_client.get_database_stats()
+                    return stats
+                else:
+                    # MongoDB is not working, use fallback
+                    print("⚠️ MongoDB returned empty results, using fallback status")
+                    return {
+                        "database_type": "fallback",
+                        "status": "connected",
+                        "total_runs": len(fallback_runs),
+                        "total_curves": len(fallback_curves),
+                        "mongodb_configured": bool(MONGODB_CONNECTION_STRING),
+                        "mongodb_initialized": db_initialized,
+                        "note": "MongoDB connection failed, using fallback storage"
+                    }
+            except Exception as e:
+                print(f"⚠️ MongoDB test failed: {e}, using fallback status")
+                return {
+                    "database_type": "fallback",
+                    "status": "connected",
+                    "total_runs": len(fallback_runs),
+                    "total_curves": len(fallback_curves),
+                    "mongodb_configured": bool(MONGODB_CONNECTION_STRING),
+                    "mongodb_initialized": db_initialized,
+                    "mongodb_error": str(e)
+                }
         else:
             return {
                 "database_type": "fallback",
