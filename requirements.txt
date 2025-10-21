@@ -4,3 +4,5 @@ pydantic
 python-dotenv
 requests
 aiohttp
+pymongo
+motor
