@@ -54,14 +54,25 @@ class QuantLibValuationEngine:
             rate_helpers = []
             for i, (rate, period) in enumerate(zip(rates, periods)):
                 if curve_type == "zero":
-                    rate_helpers.append(ql.ZeroRateHelper(
-                        ql.QuoteHandle(ql.SimpleQuote(rate)),
-                        period,
-                        self.calendar,
-                        self.day_count,
-                        self.compounding,
-                        self.frequency
-                    ))
+                    # Use DepositRateHelper for short-term rates
+                    if period.length() <= 12:  # Less than 1 year
+                        rate_helpers.append(ql.DepositRateHelper(
+                            ql.QuoteHandle(ql.SimpleQuote(rate)),
+                            period,
+                            self.calendar,
+                            ql.ModifiedFollowing,
+                            False,
+                            self.day_count
+                        ))
+                    else:  # Longer term - use SwapRateHelper
+                        rate_helpers.append(ql.SwapRateHelper(
+                            ql.QuoteHandle(ql.SimpleQuote(rate)),
+                            period,
+                            self.calendar,
+                            self.frequency,
+                            self.day_count,
+                            ql.Euribor6M()
+                        ))
                 else:  # swap curve
                     rate_helpers.append(ql.SwapRateHelper(
                         ql.QuoteHandle(ql.SimpleQuote(rate)),
@@ -151,9 +162,9 @@ class QuantLibValuationEngine:
             )
             
             # Create the swap
-            fixed_leg = ql.FixedRateLeg(fixed_schedule)
+            fixed_leg = ql.FixedRateLeg(fixed_schedule, self.day_count)
             fixed_leg.withNotionals(notional)
-            fixed_leg.withCouponRates(fixed_rate, self.day_count)
+            fixed_leg.withCouponRates(fixed_rate)
             
             floating_leg = ql.IborLeg(floating_schedule, index)
             floating_leg.withNotionals(notional)
@@ -266,13 +277,13 @@ class QuantLibValuationEngine:
             )
             
             # Create fixed legs for both currencies
-            base_fixed_leg = ql.FixedRateLeg(schedule)
+            base_fixed_leg = ql.FixedRateLeg(schedule, self.day_count)
             base_fixed_leg.withNotionals(notional_base)
-            base_fixed_leg.withCouponRates(fixed_rate_base, self.day_count)
+            base_fixed_leg.withCouponRates(fixed_rate_base)
             
-            quote_fixed_leg = ql.FixedRateLeg(schedule)
+            quote_fixed_leg = ql.FixedRateLeg(schedule, self.day_count)
             quote_fixed_leg.withNotionals(notional_quote)
-            quote_fixed_leg.withCouponRates(fixed_rate_quote, self.day_count)
+            quote_fixed_leg.withCouponRates(fixed_rate_quote)
             
             # Create floating legs
             base_floating_leg = ql.IborLeg(schedule, base_index)
