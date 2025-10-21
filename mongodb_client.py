@@ -30,7 +30,13 @@ class MongoDBClient:
             conn_preview = self.connection_string[:50] + "..." if len(self.connection_string) > 50 else self.connection_string
             print(f"🔍 Connecting to MongoDB: {conn_preview}")
             
-            self.client = AsyncIOMotorClient(self.connection_string)
+            # Try to connect with a timeout
+            self.client = AsyncIOMotorClient(
+                self.connection_string,
+                serverSelectionTimeoutMS=5000,  # 5 second timeout
+                connectTimeoutMS=5000,
+                socketTimeoutMS=5000
+            )
             self.db = self.client[self.database_name]
             
             # Test connection with a simple ping
@@ -40,7 +46,32 @@ class MongoDBClient:
         except Exception as e:
             print(f"❌ MongoDB connection failed: {e}")
             print(f"❌ Connection string length: {len(self.connection_string)}")
-            return False
+            print(f"❌ Error type: {type(e).__name__}")
+            
+            # Try alternative connection method for Azure Cosmos DB
+            try:
+                print("🔍 Trying alternative connection method...")
+                # Close existing client
+                if self.client:
+                    self.client.close()
+                
+                # Try with different parameters
+                self.client = AsyncIOMotorClient(
+                    self.connection_string,
+                    serverSelectionTimeoutMS=10000,
+                    connectTimeoutMS=10000,
+                    socketTimeoutMS=10000,
+                    retryWrites=False  # Disable retry writes for Cosmos DB
+                )
+                self.db = self.client[self.database_name]
+                
+                # Test connection
+                await self.client.admin.command('ping')
+                print(f"✅ Connected to MongoDB database (alternative method): {self.database_name}")
+                return True
+            except Exception as e2:
+                print(f"❌ Alternative connection also failed: {e2}")
+                return False
     
     async def disconnect(self):
         """Disconnect from MongoDB."""
