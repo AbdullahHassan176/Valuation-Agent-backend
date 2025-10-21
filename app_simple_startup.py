@@ -62,6 +62,200 @@ fallback_runs = [
 async def health():
     return {"status": "healthy", "mode": "simple_startup"}
 
+@app.post("/api/valuation/test-quantlib")
+async def test_quantlib_valuation(request: dict):
+    """Test QuantLib valuation and generate a comprehensive report."""
+    try:
+        print("🔍 Testing QuantLib valuation...")
+        
+        # Extract parameters from request
+        spec = request.get("spec", {})
+        notional = float(spec.get("notional", 10000000))
+        fixed_rate = float(spec.get("fixedRate", 0.035))
+        tenor_years = float(spec.get("tenor_years", 5.0))
+        currency = spec.get("ccy", "USD")
+        instrument_type = spec.get("instrument_type", "IRS")
+        
+        print(f"🔍 Parameters: notional={notional}, rate={fixed_rate}, tenor={tenor_years}, type={instrument_type}")
+        
+        # Test QuantLib availability
+        if not VALUATION_ENGINE_AVAILABLE:
+            return {
+                "success": False,
+                "error": "QuantLib not available",
+                "fallback_used": True,
+                "message": "QuantLib valuation engine not available"
+            }
+        
+        # Perform valuation
+        if instrument_type == "IRS":
+            print("🔍 Performing IRS valuation with QuantLib...")
+            result = valuation_engine.value_interest_rate_swap(
+                notional=notional,
+                fixed_rate=fixed_rate,
+                tenor_years=tenor_years,
+                frequency="SemiAnnual"
+            )
+        elif instrument_type == "CCS":
+            print("🔍 Performing CCS valuation with QuantLib...")
+            result = valuation_engine.value_cross_currency_swap(
+                notional_base=notional,
+                notional_quote=notional * 0.85,
+                base_currency=currency,
+                quote_currency="EUR",
+                fixed_rate_base=fixed_rate,
+                fixed_rate_quote=fixed_rate * 0.8,
+                tenor_years=tenor_years,
+                frequency="SemiAnnual",
+                fx_rate=1.08
+            )
+        else:
+            return {
+                "success": False,
+                "error": f"Unsupported instrument type: {instrument_type}",
+                "supported_types": ["IRS", "CCS"]
+            }
+        
+        print(f"✅ QuantLib valuation completed successfully")
+        
+        # Generate comprehensive report
+        report = {
+            "success": True,
+            "quantlib_available": True,
+            "valuation_result": result,
+            "report_summary": {
+                "instrument_type": result.get("instrument_type", instrument_type),
+                "notional": result.get("notional", notional),
+                "npv": result.get("npv", 0.0),
+                "fair_rate": result.get("fair_rate", fixed_rate),
+                "risk_metrics": result.get("risk_metrics", {}),
+                "methodology": result.get("methodology", {}),
+                "cash_flows_count": len(result.get("cash_flows", [])),
+                "valuation_date": result.get("valuation_date", datetime.now().isoformat())
+            },
+            "technical_details": {
+                "quantlib_version": "Available",
+                "calculation_method": "QuantLib Discounting Swap Engine",
+                "curve_type": "Bootstrapped Yield Curve",
+                "day_count": "Actual/360",
+                "business_day_convention": "ModifiedFollowing"
+            }
+        }
+        
+        return report
+        
+    except Exception as e:
+        print(f"❌ QuantLib test failed: {e}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        
+        return {
+            "success": False,
+            "error": str(e),
+            "quantlib_available": VALUATION_ENGINE_AVAILABLE,
+            "fallback_used": not VALUATION_ENGINE_AVAILABLE
+        }
+
+@app.post("/api/valuation/generate-report")
+async def generate_valuation_report(request: dict):
+    """Generate a comprehensive valuation report using QuantLib."""
+    try:
+        print("🔍 Generating comprehensive valuation report...")
+        
+        # Extract parameters
+        spec = request.get("spec", {})
+        notional = float(spec.get("notional", 10000000))
+        fixed_rate = float(spec.get("fixedRate", 0.035))
+        tenor_years = float(spec.get("tenor_years", 5.0))
+        currency = spec.get("ccy", "USD")
+        instrument_type = spec.get("instrument_type", "IRS")
+        as_of = request.get("asOf", datetime.now().strftime("%Y-%m-%d"))
+        
+        print(f"🔍 Generating report for {instrument_type}: {currency} {tenor_years}Y, Notional: {notional:,.0f}, Rate: {fixed_rate:.4f}")
+        
+        # Perform valuation
+        if VALUATION_ENGINE_AVAILABLE and valuation_engine:
+            if instrument_type == "IRS":
+                result = valuation_engine.value_interest_rate_swap(
+                    notional=notional,
+                    fixed_rate=fixed_rate,
+                    tenor_years=tenor_years,
+                    frequency="SemiAnnual"
+                )
+            elif instrument_type == "CCS":
+                result = valuation_engine.value_cross_currency_swap(
+                    notional_base=notional,
+                    notional_quote=notional * 0.85,
+                    base_currency=currency,
+                    quote_currency="EUR",
+                    fixed_rate_base=fixed_rate,
+                    fixed_rate_quote=fixed_rate * 0.8,
+                    tenor_years=tenor_years,
+                    frequency="SemiAnnual",
+                    fx_rate=1.08
+                )
+            else:
+                return {"success": False, "error": f"Unsupported instrument type: {instrument_type}"}
+        else:
+            return {"success": False, "error": "QuantLib not available"}
+        
+        # Generate comprehensive report
+        report = {
+            "report_metadata": {
+                "generated_at": datetime.now().isoformat(),
+                "as_of_date": as_of,
+                "report_type": "QuantLib Valuation Report",
+                "version": "1.0"
+            },
+            "instrument_details": {
+                "type": instrument_type,
+                "notional": notional,
+                "currency": currency,
+                "fixed_rate": fixed_rate,
+                "tenor_years": tenor_years,
+                "frequency": "SemiAnnual"
+            },
+            "valuation_results": {
+                "npv": result.get("npv", 0.0),
+                "fair_rate": result.get("fair_rate", fixed_rate),
+                "annuity": result.get("annuity", 0.0),
+                "valuation_date": result.get("valuation_date", as_of)
+            },
+            "risk_metrics": result.get("risk_metrics", {}),
+            "cash_flows": result.get("cash_flows", []),
+            "methodology": result.get("methodology", {}),
+            "assumptions": {
+                "discount_curve": "Bootstrapped from market rates",
+                "day_count_convention": "Actual/360",
+                "business_day_convention": "ModifiedFollowing",
+                "calendar": "TARGET",
+                "compounding": "Annual"
+            },
+            "analytics": {
+                "total_cash_flows": len(result.get("cash_flows", [])),
+                "npv_per_notional": (result.get("npv", 0.0) / notional) * 100 if notional != 0 else 0,
+                "risk_summary": {
+                    "dv01": result.get("risk_metrics", {}).get("dv01", 0.0),
+                    "duration": result.get("risk_metrics", {}).get("duration", 0.0),
+                    "convexity": result.get("risk_metrics", {}).get("convexity", 0.0)
+                }
+            }
+        }
+        
+        print(f"✅ Comprehensive report generated successfully")
+        return report
+        
+    except Exception as e:
+        print(f"❌ Report generation failed: {e}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        
+        return {
+            "success": False,
+            "error": str(e),
+            "quantlib_available": VALUATION_ENGINE_AVAILABLE
+        }
+
 # Root endpoint
 @app.get("/")
 async def root():
