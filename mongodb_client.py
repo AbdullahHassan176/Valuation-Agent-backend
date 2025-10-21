@@ -151,6 +151,9 @@ class MongoDBClient:
             # Insert the run
             result = await self.db.runs.insert_one(run_data)
             print(f"✅ Created run with ID: {result.inserted_id}")
+            
+            # Convert ObjectId to string for JSON serialization
+            run_data["_id"] = str(result.inserted_id)
             return str(result.inserted_id)
         except Exception as e:
             print(f"❌ Error creating run: {e}")

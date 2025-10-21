@@ -773,7 +773,31 @@ async def create_run(request: dict):
             fallback_runs.append(new_run)
         
         print(f"✅ Run creation completed successfully: {new_run['id']}")
-        return new_run
+        
+        # Return only serializable fields (remove any MongoDB-specific fields)
+        serializable_run = {
+            "id": new_run.get("id"),
+            "name": new_run.get("name"),
+            "type": new_run.get("type"),
+            "status": new_run.get("status"),
+            "notional": new_run.get("notional"),
+            "currency": new_run.get("currency"),
+            "tenor": new_run.get("tenor"),
+            "fixedRate": new_run.get("fixedRate"),
+            "floatingIndex": new_run.get("floatingIndex"),
+            "pv": new_run.get("pv"),
+            "pv01": new_run.get("pv01"),
+            "created_at": new_run.get("created_at"),
+            "completed_at": new_run.get("completed_at"),
+            "progress": new_run.get("progress"),
+            "asOf": new_run.get("asOf"),
+            "spec": new_run.get("spec"),
+            "instrument_type": new_run.get("instrument_type"),
+            "pv_base_ccy": new_run.get("pv_base_ccy"),
+            "mongo_id": new_run.get("mongo_id")
+        }
+        
+        return serializable_run
     except Exception as e:
         print(f"❌ Error creating run: {e}")
         raise HTTPException(status_code=500, detail=str(e))
