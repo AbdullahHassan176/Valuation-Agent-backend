@@ -772,6 +772,11 @@ async def create_run(request: dict):
             print("💾 Storing run in fallback storage...")
             fallback_runs.append(new_run)
         
+        # Always add to fallback storage as backup
+        if new_run not in fallback_runs:
+            fallback_runs.append(new_run)
+            print(f"✅ Run added to fallback storage: {new_run['id']}")
+        
         print(f"✅ Run creation completed successfully: {new_run['id']}")
         
         # Return only serializable fields (remove any MongoDB-specific fields)
