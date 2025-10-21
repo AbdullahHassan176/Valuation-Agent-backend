@@ -448,6 +448,26 @@ async def root():
 async def health():
     return {"status": "healthy", "mode": "ultra_minimal"}
 
+@app.get("/api/test/simple-runs")
+async def test_simple_runs():
+    """Simple test endpoint to return runs without complex logic."""
+    global fallback_runs
+    try:
+        print(f"🔍 test_simple_runs called - fallback_runs count: {len(fallback_runs)}")
+        return {
+            "success": True,
+            "runs": fallback_runs,
+            "count": len(fallback_runs)
+        }
+    except Exception as e:
+        print(f"❌ Error in test_simple_runs: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "runs": [],
+            "count": 0
+        }
+
 # Runs endpoints
 @app.get("/api/valuation/runs")
 async def get_runs():
