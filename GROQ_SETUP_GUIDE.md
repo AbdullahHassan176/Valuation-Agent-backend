@@ -29,7 +29,7 @@
    ```
    USE_GROQ = true
    GROQ_API_KEY = your_groq_key_here
-   GROQ_MODEL = llama3-8b-8192
+   GROQ_MODEL = llama-3.1-8b-instant
    ```
 
 3. **Save and restart** the App Service
@@ -59,15 +59,15 @@ POST /poc/ai-agent/explain-ifrs
 ## 🎯 GROQ MODELS AVAILABLE:
 
 ### Free Models (No Payment Ever):
-- **llama3-8b-8192** - Fast, good quality (recommended)
-- **llama3-70b-8192** - Higher quality, slightly slower
+- **llama-3.1-8b-instant** - Fast, good quality (recommended)
+- **llama-3.1-70b-versatile** - Higher quality, slightly slower
 - **mixtral-8x7b-32768** - Good for complex reasoning
 - **gemma-7b-it** - Google's model
 
 ### Model Comparison:
-- **llama3-8b**: Fast, good for most tasks
-- **llama3-70b**: Best quality, use for complex analysis
-- **mixtral**: Good for multi-step reasoning
+- **llama-3.1-8b-instant**: Fast, good for most tasks
+- **llama-3.1-70b-versatile**: Best quality, use for complex analysis
+- **mixtral-8x7b-32768**: Good for multi-step reasoning
 
 ## 🔧 TROUBLESHOOTING:
 

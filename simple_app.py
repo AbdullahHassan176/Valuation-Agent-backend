@@ -42,7 +42,7 @@ USE_OLLAMA = os.getenv("USE_OLLAMA", "false").lower() == "true"
 # Groq Configuration (Free Cloud Alternative)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama3-8b-8192")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 USE_GROQ = os.getenv("USE_GROQ", "false").lower() == "true"
 
 # System prompt for the AI valuation auditor
