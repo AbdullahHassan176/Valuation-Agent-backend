@@ -419,7 +419,12 @@ async def create_curves():
 
 @app.get("/poc/chat")
 async def chat_get():
-    return {"message": "Chat endpoint active - NEW VERSION DEPLOYED", "status": "ready", "version": "2.0"}
+    return {
+        "message": "Chat endpoint active - INTELLIGENT VERSION 2.0 DEPLOYED", 
+        "status": "ready", 
+        "version": "2.0",
+        "features": "Intelligent responses, runs analysis, curves info, health checks"
+    }
 
 @app.get("/api/test/chat")
 async def test_chat():
@@ -466,11 +471,13 @@ async def test_mongodb_connection():
 async def chat_post(request: dict = None):
     """Process chat messages and provide intelligent responses."""
     print(f"🔍 Chat endpoint called with request: {request}")
+    print(f"🔍 Chat endpoint version: 2.0 - INTELLIGENT RESPONSES")
     
     if not request or not request.get("message"):
         return {
             "response": "Hello! I'm your valuation assistant. How can I help you today?",
-            "status": "success"
+            "status": "success",
+            "version": "2.0"
         }
     
     message = request.get("message", "").lower().strip()
