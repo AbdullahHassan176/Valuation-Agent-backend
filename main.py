@@ -13,10 +13,10 @@ sys.path.insert(0, str(current_dir))
 
 print(f"🔍 Starting ultra-minimal backend service from: {current_dir}")
 
-# Import and run the ultra minimal app with full features
+# Import and run the QuantLib simple app
 try:
-    from app_ultra_minimal import app
-    print("✅ Ultra minimal app imported successfully")
+    from app_quantlib_simple import app
+    print("✅ QuantLib simple app imported successfully")
     
     if __name__ == "__main__":
         import uvicorn
