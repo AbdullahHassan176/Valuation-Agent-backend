@@ -209,6 +209,24 @@ async def call_groq(user_message: str, context_data: Dict[str, Any] = None) -> s
 async def call_llm(user_message: str, context_data: Dict[str, Any] = None) -> str:
     """Call LLM with user message and context data."""
     
+    # Special Easter Egg: Check for Irshad roasts BEFORE calling LLM
+    if any(word in user_message.lower() for word in ["irshad", "who is irshad", "tell me about irshad", "what about irshad"]):
+        print("🎯 EASTER EGG TRIGGERED: Irshad roast!")
+        import random
+        roasts = [
+            "Irshad? Oh, you mean the guy who still uses Excel 2003 and thinks 'Ctrl+Z' is cutting-edge technology? 😂",
+            "Irshad is that accountant who wears the same tie to every meeting and thinks 'depreciation' is a personality trait! 📊",
+            "Irshad's golf game is so bad, even the golf course has a 'No Irshad' policy. His handicap is higher than the national debt! ⛳",
+            "Irshad's sense of style is so outdated, his wardrobe is considered a historical artifact. Even his calculator has better fashion sense! 👔",
+            "Irshad is so old, he remembers when 'cloud computing' meant looking up at the sky and wondering if it would rain! ☁️",
+            "Irshad's jokes are so bad, they make tax season seem fun. His punchlines have a longer shelf life than his spreadsheets! 😅",
+            "Irshad is the only person who can make a balance sheet look exciting... by making everything else look boring! 📈",
+            "Irshad's idea of a wild night is double-checking his calculations and using a different colored highlighter! 🎨",
+            "Irshad is so washed up, even his coffee has given up on him. His desk is a museum of outdated technology! ☕",
+            "Irshad's golf swing is so terrible, the ball goes backwards. He's the only person who can lose a game of golf to a tree! 🌳"
+        ]
+        return random.choice(roasts)
+    
     # Try Groq first if enabled (free cloud option)
     if USE_GROQ:
         print("🔍 Using Groq LLM")
@@ -345,8 +363,8 @@ def generate_fallback_response(message: str, context_data: Dict[str, Any]) -> st
     elif any(word in user_message for word in ["xva", "fva", "kva", "mva", "valuation adjustment"]):
         return "I can help with XVA analysis. Which adjustment are you working on - CVA, DVA, FVA, or something else?"
 
-    # Irshad roasts (Easter egg)
-    elif any(word in user_message for word in ["irshad", "who is irshad"]):
+    # Irshad roasts (Easter egg) - Check for various forms of the question
+    elif any(word in user_message for word in ["irshad", "who is irshad", "tell me about irshad", "what about irshad"]):
         import random
         roasts = [
             "Irshad? Oh, you mean the guy who still uses Excel 2003 and thinks 'Ctrl+Z' is cutting-edge technology? 😂",
