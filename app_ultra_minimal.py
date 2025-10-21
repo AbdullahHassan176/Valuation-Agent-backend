@@ -1125,6 +1125,23 @@ async def test_groq_config():
         "api_key_preview": f"{GROQ_API_KEY[:8]}..." if GROQ_API_KEY else "Not set"
     }
 
+# Test endpoint to echo request
+@app.post("/api/test/echo-request")
+async def test_echo_request(request: dict):
+    """Test endpoint to echo the request and see what's being sent."""
+    try:
+        return {
+            "success": True,
+            "received_request": request,
+            "request_type": type(request).__name__,
+            "request_keys": list(request.keys()) if isinstance(request, dict) else "Not a dict"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 # Simple test endpoint for run creation
 @app.post("/api/test/create-simple-run")
 async def test_create_simple_run():
