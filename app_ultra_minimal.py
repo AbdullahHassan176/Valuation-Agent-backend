@@ -627,11 +627,10 @@ async def create_run(request: dict):
                 print(f"🔍 Valuation engine available: {valuation_engine is not None}")
                 print(f"🔍 Valuation engine type: {type(valuation_engine)}")
                 
-                valuation_result = valuation_engine.calculate_irs_valuation(
+                valuation_result = valuation_engine.value_interest_rate_swap(
                     notional=notional,
                     fixed_rate=fixed_rate,
                     tenor_years=tenor_years,
-                    currency=currency,
                     frequency=frequency
                 )
                 print(f"✅ IRS valuation completed: NPV = {valuation_result.get('npv', 0.0)}")
@@ -663,7 +662,7 @@ async def create_run(request: dict):
             
             try:
                 print(f"🔍 Attempting CCS valuation for {base_currency}/{quote_currency} swap...")
-                valuation_result = valuation_engine.calculate_ccs_valuation(
+                valuation_result = valuation_engine.value_cross_currency_swap(
                     notional_base=notional_base,
                     notional_quote=notional_quote,
                     base_currency=base_currency,
