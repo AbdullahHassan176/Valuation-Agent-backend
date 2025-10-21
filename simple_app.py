@@ -11,6 +11,8 @@ import json
 import math
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
+import asyncio
+import aiohttp
 
 # Try to import MongoDB client, fallback if not available
 try:
@@ -21,6 +23,99 @@ except ImportError as e:
     print("💡 Using fallback storage mode")
     MONGODB_AVAILABLE = False
     mongodb_client = None
+
+# LLM Configuration
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+
+# System prompt for the AI valuation auditor
+SYSTEM_PROMPT = """You are an expert AI Valuation Auditor and Financial Risk Specialist with deep expertise in:
+
+**Core Competencies:**
+- IFRS 13 Fair Value Measurement
+- Financial instrument valuation (IRS, CCS, Bonds, Derivatives)
+- Risk management and regulatory compliance
+- Audit procedures and documentation
+- Market data analysis and curve construction
+- Sensitivity analysis and stress testing
+
+**Your Role:**
+- Act as a senior valuation auditor and risk specialist
+- Provide expert analysis and recommendations
+- Ensure compliance with IFRS and regulatory standards
+- Guide through complex valuation methodologies
+- Audit valuation processes and controls
+
+**Communication Style:**
+- Professional, authoritative, yet approachable
+- Use technical terminology appropriately
+- Provide detailed explanations with examples
+- Ask clarifying questions when needed
+- Offer actionable recommendations
+
+**Available Data:**
+- Valuation runs and their results
+- Yield curves and market data
+- Risk metrics and sensitivities
+- System health and performance
+
+Always maintain audit-quality standards and provide thorough, well-reasoned responses."""
+
+# LLM Client for AI responses
+async def call_llm(user_message: str, context_data: Dict[str, Any] = None) -> str:
+    """Call LLM with user message and context data."""
+    if not OPENAI_API_KEY:
+        return "I'm sorry, but I don't have access to the AI language model right now. Please check the configuration."
+    
+    try:
+        # Prepare context information
+        context_info = ""
+        if context_data:
+            if context_data.get("runs"):
+                context_info += f"\n**Available Valuation Runs:**\n"
+                for run in context_data["runs"][:3]:  # Show first 3 runs
+                    context_info += f"- {run.get('id', 'Unknown')}: {run.get('instrument_type', 'Unknown')} ({run.get('currency', 'Unknown')}) - PV: ${run.get('pv_base_ccy', 0):,.2f}\n"
+            
+            if context_data.get("curves"):
+                context_info += f"\n**Available Yield Curves:**\n"
+                for curve in context_data["curves"][:3]:  # Show first 3 curves
+                    context_info += f"- {curve.get('currency', 'Unknown')} {curve.get('type', 'Unknown')}: {len(curve.get('nodes', []))} points\n"
+            
+            if context_data.get("system_status"):
+                context_info += f"\n**System Status:** {context_data['system_status']}\n"
+        
+        # Prepare messages for LLM
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": f"{user_message}\n\n{context_info}"}
+        ]
+        
+        # Call OpenAI API
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": "gpt-4",
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 1000
+            }
+            
+            async with session.post(f"{OPENAI_BASE_URL}/chat/completions", 
+                                 headers=headers, 
+                                 json=payload) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data["choices"][0]["message"]["content"]
+                else:
+                    error_text = await response.text()
+                    return f"I encountered an error with the AI service: {response.status} - {error_text}"
+    
+    except Exception as e:
+        return f"I'm sorry, but I encountered an error while processing your request: {str(e)}"
 
 # Initialize MongoDB connection
 async def init_database():
@@ -563,164 +658,72 @@ async def test_mongodb_connection():
 
 @app.post("/poc/chat")
 async def chat_post(request: dict = None):
-    """Process chat messages and provide intelligent responses."""
+    """Process chat messages with LLM-powered intelligent responses."""
     print(f"🔍 Chat endpoint called with request: {request}")
-    print(f"🔍 Chat endpoint version: 2.0 - INTELLIGENT RESPONSES")
+    print(f"🔍 Chat endpoint version: 3.0 - LLM-POWERED AI AGENT")
     
     if not request or not request.get("message"):
         return {
-            "response": "Hello! I'm your valuation assistant. How can I help you today?",
+            "response": "Hello! I'm your AI valuation auditor and specialist. How can I help you today?",
             "status": "success",
-            "version": "2.0"
+            "version": "3.0"
         }
     
-    message = request.get("message", "").lower().strip()
+    message = request.get("message", "").strip()
     
-    # Handle different types of queries
-    if any(word in message for word in ["hello", "hi", "hey", "good morning", "good afternoon"]):
-        return {
-            "response": "Hello! I'm your AI valuation assistant. I can help you with:\n• Analyzing valuation runs\n• Generating sensitivity scenarios\n• Exporting reports\n• IFRS-13 compliance questions\n\nWhat would you like to know?",
-            "status": "success"
-        }
-    
-    elif any(word in message for word in ["runs", "valuation", "latest", "show me"]):
+    try:
+        # Gather context data for the LLM
+        context_data = {}
+        
+        # Get recent runs
         try:
-            # Get recent runs
             if MONGODB_AVAILABLE and db_initialized:
                 runs = await mongodb_client.get_runs(limit=5)
             else:
                 runs = fallback_runs[-5:] if fallback_runs else []
-            
-            if runs:
-                response = f"📊 **Here are your recent valuation runs:**\n\n"
-                for i, run in enumerate(runs, 1):
-                    instrument_type = run.get('instrument_type', 'Unknown')
-                    currency = run.get('currency', 'Unknown')
-                    pv = run.get('pv_base_ccy', 0)
-                    notional = run.get('notional_amount', 0)
-                    status = run.get('status', 'Unknown')
-                    
-                    # Add emoji based on instrument type
-                    emoji = "📈" if instrument_type == "IRS" else "🔄" if instrument_type == "CCS" else "📊"
-                    
-                    response += f"{emoji} **Run {i}: {run.get('id', 'Unknown')}**\n"
-                    response += f"   • Type: {instrument_type} ({currency})\n"
-                    response += f"   • Status: {status}\n"
-                    response += f"   • Present Value: ${pv:,.2f}\n"
-                    response += f"   • Notional: ${notional:,.0f}\n\n"
-                
-                response += "💡 **What would you like to know about these runs?**\n"
-                response += "• I can explain the valuation methodology\n"
-                response += "• I can analyze risk metrics\n"
-                response += "• I can help with sensitivity analysis"
-            else:
-                response = "🔍 **No valuation runs found yet.**\n\n"
-                response += "Would you like me to help you create one? I can guide you through:\n"
-                response += "• Setting up an Interest Rate Swap (IRS)\n"
-                response += "• Configuring a Cross Currency Swap (CCS)\n"
-                response += "• Understanding the valuation process"
-            
-            return {"response": response, "status": "success"}
+            context_data["runs"] = runs
         except Exception as e:
-            return {"response": f"❌ Sorry, I couldn't retrieve the runs. Error: {str(e)}", "status": "error"}
-    
-    elif any(word in message for word in ["curves", "yield", "rates"]):
+            print(f"Error getting runs: {e}")
+            context_data["runs"] = []
+        
+        # Get available curves
         try:
-            # Get available curves
             if MONGODB_AVAILABLE and db_initialized:
                 curves = await mongodb_client.get_curves(limit=5)
             else:
                 curves = fallback_curves[-5:] if fallback_curves else []
-            
-            if curves:
-                response = "📈 **Available Yield Curves:**\n\n"
-                for curve in curves:
-                    currency = curve.get('currency', 'Unknown')
-                    curve_type = curve.get('type', 'Unknown')
-                    as_of_date = curve.get('as_of_date', 'Unknown')
-                    nodes = curve.get('nodes', [])
-                    
-                    # Add currency emoji
-                    currency_emoji = {"USD": "🇺🇸", "EUR": "🇪🇺", "GBP": "🇬🇧"}.get(currency, "💱")
-                    
-                    response += f"{currency_emoji} **{currency} {curve_type}**\n"
-                    response += f"   • As of: {as_of_date}\n"
-                    response += f"   • Tenor points: {len(nodes)}\n"
-                    
-                    # Show sample rates
-                    if nodes and len(nodes) > 0:
-                        sample_rates = nodes[:3]  # Show first 3 rates
-                        response += f"   • Sample rates: "
-                        for node in sample_rates:
-                            tenor = node.get('tenor', 'N/A')
-                            rate = node.get('rate', 0)
-                            response += f"{tenor} {rate:.3%}, "
-                        response = response.rstrip(", ") + "\n"
-                    response += "\n"
-                
-                response += "💡 **What would you like to know about these curves?**\n"
-                response += "• I can explain the curve construction methodology\n"
-                response += "• I can analyze rate sensitivity\n"
-                response += "• I can help with curve interpolation"
-            else:
-                response = "🔍 **No yield curves available.**\n\n"
-                response += "Would you like me to generate some sample curves? I can create:\n"
-                response += "• USD OIS curve\n"
-                response += "• EUR OIS curve\n"
-                response += "• GBP OIS curve"
-            
-            return {"response": response, "status": "success"}
+            context_data["curves"] = curves
         except Exception as e:
-            return {"response": f"❌ Sorry, I couldn't retrieve the curves. Error: {str(e)}", "status": "error"}
-    
-    elif any(word in message for word in ["health", "status", "backend"]):
+            print(f"Error getting curves: {e}")
+            context_data["curves"] = []
+        
+        # Get system status
         try:
-            # Get system status
             if MONGODB_AVAILABLE and db_initialized:
                 stats = await mongodb_client.get_database_stats()
-                response = f"**System Status:** ✅ Healthy\n\n"
-                response += f"**Database:** {stats.get('database_type', 'Unknown')}\n"
-                response += f"**Total Runs:** {stats.get('total_runs', 0)}\n"
-                response += f"**Total Curves:** {stats.get('total_curves', 0)}\n"
-                response += f"**Message:** {stats.get('message', 'All systems operational')}"
+                context_data["system_status"] = f"Database: {stats.get('database_type', 'Unknown')}, Runs: {stats.get('total_runs', 0)}, Curves: {stats.get('total_curves', 0)}"
             else:
-                response = "**System Status:** ⚠️ Using fallback storage\n\n"
-                response += f"**Runs in memory:** {len(fallback_runs)}\n"
-                response += f"**Curves in memory:** {len(fallback_curves)}\n"
-                response += "**Note:** MongoDB not configured - using in-memory storage"
-            
-            return {"response": response, "status": "success"}
+                context_data["system_status"] = f"Fallback mode - Runs: {len(fallback_runs)}, Curves: {len(fallback_curves)}"
         except Exception as e:
-            return {"response": f"Sorry, I couldn't check the system status. Error: {str(e)}", "status": "error"}
-    
-    elif any(word in message for word in ["create", "new", "irs", "swap"]):
+            print(f"Error getting system status: {e}")
+            context_data["system_status"] = "Status unknown"
+        
+        # Call LLM with context
+        llm_response = await call_llm(message, context_data)
+        
         return {
-            "response": "🚀 **Let's create a new valuation run!**\n\n**Step-by-step process:**\n1. Go to the main page\n2. Click 'Create New Run'\n3. Fill in the instrument details\n4. Submit to generate the valuation\n\n**I can help you with:**\n• Understanding instrument types (IRS vs CCS)\n• Explaining valuation methodologies\n• Analyzing results once you have a run\n\n**What type of instrument are you looking to value?**",
-            "status": "success"
+            "response": llm_response,
+            "status": "success",
+            "version": "3.0",
+            "llm_powered": True
         }
-    
-    elif any(word in message for word in ["help", "what can you do", "capabilities"]):
+        
+    except Exception as e:
+        print(f"Error in chat endpoint: {e}")
         return {
-            "response": "I'm your valuation assistant! Here's what I can do:\n\n**📊 Analysis:**\n• Show latest valuation runs\n• Analyze risk metrics\n• Generate sensitivity scenarios\n\n**📈 Data:**\n• Display available yield curves\n• Check system health\n• Export reports\n\n**📋 Compliance:**\n• Answer IFRS-13 questions\n• Explain valuation methodologies\n• Provide regulatory guidance\n\nWhat would you like to explore?",
-            "status": "success"
-        }
-    
-    elif any(word in message for word in ["who", "what", "irshad", "person", "name"]):
-        return {
-            "response": "🤖 **I'm an AI valuation assistant!**\n\nI'm here to help you with:\n• Financial instrument valuations\n• Risk analysis and metrics\n• IFRS compliance questions\n• Yield curve analysis\n\nI don't have personal information about individuals, but I'm here to assist with your valuation needs! What would you like to know about the system?",
-            "status": "success"
-        }
-    
-    elif any(word in message for word in ["no", "nope", "not working", "broken", "error"]):
-        return {
-            "response": "😔 **I understand you're having issues.**\n\nLet me help troubleshoot:\n• **System Status**: I can check if everything is running properly\n• **Data Issues**: I can verify if runs and curves are available\n• **Technical Problems**: I can guide you through common solutions\n\n**What specific issue are you experiencing?**\n• Chat not responding properly?\n• Missing data or runs?\n• System errors?",
-            "status": "success"
-        }
-    
-    else:
-        return {
-            "response": f"🤔 **I understand you're asking about '{message}'.**\n\nI'm your AI valuation assistant specialized in financial instruments and IFRS compliance. Let me help you with:\n\n**📊 Data & Analysis:**\n• 'Show me the latest runs' - View valuation results\n• 'What curves are available?' - See yield curves\n• 'Check system health' - Verify everything is working\n\n**💡 Guidance:**\n• 'Help me with IFRS compliance' - Regulatory questions\n• 'Create a new run' - Start a valuation\n• 'Explain methodology' - Understand the process\n\n**What would you like to explore?**",
-            "status": "success"
+            "response": f"I'm sorry, but I encountered an error while processing your request: {str(e)}",
+            "status": "error",
+            "version": "3.0"
         }
 
 @app.get("/api/test/mongodb")
