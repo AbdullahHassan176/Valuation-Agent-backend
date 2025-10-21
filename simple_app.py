@@ -60,6 +60,7 @@ async def init_database():
                 success = False
         else:
             print("❌ MongoDB connection failed, falling back to in-memory storage")
+            print("💡 This is normal - the app will work with fallback storage")
         
         return success
     except Exception as e:

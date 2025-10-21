@@ -26,15 +26,20 @@ class MongoDBClient:
     async def connect(self):
         """Connect to MongoDB."""
         try:
+            # Handle long connection strings by truncating for logging
+            conn_preview = self.connection_string[:50] + "..." if len(self.connection_string) > 50 else self.connection_string
+            print(f"🔍 Connecting to MongoDB: {conn_preview}")
+            
             self.client = AsyncIOMotorClient(self.connection_string)
             self.db = self.client[self.database_name]
             
-            # Test connection
+            # Test connection with a simple ping
             await self.client.admin.command('ping')
             print(f"✅ Connected to MongoDB database: {self.database_name}")
             return True
         except Exception as e:
             print(f"❌ MongoDB connection failed: {e}")
+            print(f"❌ Connection string length: {len(self.connection_string)}")
             return False
     
     async def disconnect(self):
