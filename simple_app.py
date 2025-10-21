@@ -24,11 +24,16 @@ except ImportError as e:
     print("💡 Using fallback storage mode")
     MONGODB_AVAILABLE = False
     mongodb_client = None
-except Exception as e:
-    print(f"⚠️ MongoDB client error: {e}")
-    print("💡 Using fallback storage mode")
-    MONGODB_AVAILABLE = False
-    mongodb_client = None
+
+# Try to import QuantLib valuation engine
+try:
+    from quantlib_valuation import QuantLibValuationEngine
+    QUANTLIB_AVAILABLE = True
+    print("✅ QuantLib valuation engine imported successfully")
+except ImportError as e:
+    print(f"⚠️ QuantLib not available: {e}")
+    print("💡 Using simplified valuation")
+    QUANTLIB_AVAILABLE = False
 
 # LLM Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -759,11 +764,73 @@ async def create_run(request: dict = None):
         if "fixedRate" in spec:
             rate = spec["fixedRate"]
     
-    # Use financial calculation
-    pv_base_ccy = calculate_present_value(notional_amount, rate, time_to_maturity, instrument_type)
-    
-    # Calculate risk metrics
-    risk_metrics = calculate_risk_metrics(notional_amount, pv_base_ccy, currency)
+    # Use QuantLib for advanced valuation if available
+    if QUANTLIB_AVAILABLE:
+        try:
+            valuation_engine = QuantLibValuationEngine()
+            
+            if instrument_type == "IRS":
+                # Interest Rate Swap valuation
+                fixed_rate = rate
+                tenor_years = time_to_maturity
+                frequency = "SemiAnnual"
+                
+                # Create realistic yield curve
+                curve_rates = [0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05]
+                curve_tenors = [0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 30.0]
+                
+                valuation_result = valuation_engine.value_interest_rate_swap(
+                    notional=notional_amount,
+                    fixed_rate=fixed_rate,
+                    tenor_years=tenor_years,
+                    frequency=frequency,
+                    curve_rates=curve_rates,
+                    curve_tenors=curve_tenors
+                )
+                
+                pv_base_ccy = valuation_result.get("npv", 0)
+                risk_metrics = valuation_result.get("risk_metrics", {})
+                comprehensive_report = valuation_engine.generate_comprehensive_report(valuation_result)
+                
+            elif instrument_type == "CCS":
+                # Cross Currency Swap valuation
+                notional_quote = notional_amount * 0.85  # Assume 85% of base notional
+                quote_currency = "EUR" if currency == "USD" else "USD"
+                fixed_rate_quote = rate * 0.8  # Assume 80% of base rate
+                fx_rate = 0.85 if currency == "USD" else 1.18
+                
+                valuation_result = valuation_engine.value_cross_currency_swap(
+                    notional_base=notional_amount,
+                    notional_quote=notional_quote,
+                    base_currency=currency,
+                    quote_currency=quote_currency,
+                    fixed_rate_base=rate,
+                    fixed_rate_quote=fixed_rate_quote,
+                    tenor_years=time_to_maturity,
+                    frequency="SemiAnnual",
+                    fx_rate=fx_rate
+                )
+                
+                pv_base_ccy = valuation_result.get("npv_base", 0)
+                risk_metrics = valuation_result.get("risk_metrics", {})
+                comprehensive_report = valuation_engine.generate_comprehensive_report(valuation_result)
+                
+            else:
+                # Fallback to simplified calculation
+                pv_base_ccy = calculate_present_value(notional_amount, rate, time_to_maturity, instrument_type)
+                risk_metrics = calculate_risk_metrics(notional_amount, pv_base_ccy, currency)
+                comprehensive_report = None
+                
+        except Exception as e:
+            print(f"❌ QuantLib valuation failed: {e}, using fallback")
+            pv_base_ccy = calculate_present_value(notional_amount, rate, time_to_maturity, instrument_type)
+            risk_metrics = calculate_risk_metrics(notional_amount, pv_base_ccy, currency)
+            comprehensive_report = None
+    else:
+        # Use simplified financial calculation
+        pv_base_ccy = calculate_present_value(notional_amount, rate, time_to_maturity, instrument_type)
+        risk_metrics = calculate_risk_metrics(notional_amount, pv_base_ccy, currency)
+        comprehensive_report = None
     
     # Prepare run data for MongoDB
     run_data = {
@@ -775,14 +842,16 @@ async def create_run(request: dict = None):
         "as_of_date": as_of_date,
         "pv_base_ccy": round(pv_base_ccy, 2),
         "spec": spec if spec else None,
+        "comprehensive_report": comprehensive_report,
         "metadata": {
             "source": "backend",
-            "calculation_method": "enhanced_financial",
+            "calculation_method": "quantlib_advanced" if QUANTLIB_AVAILABLE and comprehensive_report else "enhanced_financial",
             "time_to_maturity": time_to_maturity,
             "rate_used": rate,
             "risk_metrics": risk_metrics,
             "calculation_timestamp": current_time,
-            "payload_format": "new_frontend" if spec else "legacy"
+            "payload_format": "new_frontend" if spec else "legacy",
+            "quantlib_available": QUANTLIB_AVAILABLE
         }
     }
     
@@ -1389,6 +1458,59 @@ async def ai_explain_ifrs(request: dict = None):
         "ai_powered": True,
         "confidence": 0.9
     }
+
+@app.get("/api/valuation/report/{run_id}")
+async def get_valuation_report(run_id: str):
+    """Get comprehensive valuation report for a specific run."""
+    try:
+        # Get run from MongoDB or fallback
+        if MONGODB_AVAILABLE and db_initialized:
+            runs = await mongodb_client.get_runs()
+            run = next((r for r in runs if r.get("id") == run_id), None)
+        else:
+            run = next((r for r in fallback_runs if r.get("id") == run_id), None)
+        
+        if not run:
+            raise HTTPException(status_code=404, detail="Run not found")
+        
+        # Check if comprehensive report exists
+        comprehensive_report = run.get("comprehensive_report")
+        if comprehensive_report:
+            return {
+                "run_id": run_id,
+                "report": comprehensive_report,
+                "quantlib_used": run.get("metadata", {}).get("quantlib_available", False)
+            }
+        else:
+            # Generate basic report from available data
+            basic_report = {
+                "executive_summary": {
+                    "instrument": run.get("instrument_type", "Unknown"),
+                    "npv": run.get("pv_base_ccy", 0),
+                    "notional": run.get("notional_amount", 0),
+                    "currency": run.get("currency", "USD"),
+                    "as_of_date": run.get("as_of_date", "Unknown")
+                },
+                "risk_metrics": run.get("metadata", {}).get("risk_metrics", {}),
+                "methodology": {
+                    "calculation_method": run.get("metadata", {}).get("calculation_method", "Unknown"),
+                    "quantlib_available": run.get("metadata", {}).get("quantlib_available", False)
+                },
+                "conclusions": [
+                    f"Valuation completed using {run.get('metadata', {}).get('calculation_method', 'Unknown')} method",
+                    "Regular monitoring of market conditions recommended",
+                    "Consider implementing appropriate hedging strategies"
+                ]
+            }
+            
+            return {
+                "run_id": run_id,
+                "report": basic_report,
+                "quantlib_used": run.get("metadata", {}).get("quantlib_available", False)
+            }
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

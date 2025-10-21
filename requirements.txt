@@ -6,3 +6,9 @@ requests
 aiohttp
 pymongo
 motor
+quantlib
+numpy
+scipy
+pandas
+matplotlib
+seaborn
