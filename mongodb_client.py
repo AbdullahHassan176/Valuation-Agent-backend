@@ -1,5 +1,6 @@
 """
-MongoDB client for Azure Cosmos DB for MongoDB integration.
+MongoDB client for Azure Cosmos DB for MongoDB.
+Fixed version with proper indentation.
 """
 
 import os
@@ -9,6 +10,7 @@ import asyncio
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 import json
+import urllib.parse
 
 class MongoDBClient:
     """MongoDB client for Azure Cosmos DB for MongoDB."""
@@ -75,7 +77,6 @@ class MongoDBClient:
                     print(f"❌ Unicode error with connection string: {unicode_err}")
                     print("🔍 Trying with URL encoding...")
                     # Try to encode the connection string properly
-                    import urllib.parse
                     encoded_conn = urllib.parse.quote(self.connection_string, safe='://@')
                     self.client = AsyncIOMotorClient(
                         encoded_conn,
@@ -84,8 +85,8 @@ class MongoDBClient:
                         socketTimeoutMS=30000,
                         retryWrites=False,
                         tls=True,
-                        directConnection=False,
-                        maxPoolSize=10,
+                        directConnection=True,
+                        maxPoolSize=1,
                         minPoolSize=1
                     )
             else:
@@ -135,7 +136,7 @@ class MongoDBClient:
             except Exception as e2:
                 print(f"❌ Alternative connection also failed: {e2}")
                 return False
-    
+            
     async def disconnect(self):
         """Disconnect from MongoDB."""
         if self.client:
@@ -144,128 +145,105 @@ class MongoDBClient:
     async def create_run(self, run_data: Dict[str, Any]) -> str:
         """Create a new valuation run in MongoDB."""
         try:
-            # Add timestamp
-            run_data["created_at"] = datetime.utcnow()
-            run_data["updated_at"] = datetime.utcnow()
+            if not self.db:
+                await self.connect()
             
-            # Insert into runs collection
+            # Insert the run
             result = await self.db.runs.insert_one(run_data)
-            print(f"✅ Run created with ID: {result.inserted_id}")
+            print(f"✅ Created run with ID: {result.inserted_id}")
             return str(result.inserted_id)
         except Exception as e:
             print(f"❌ Error creating run: {e}")
-            raise e
+            return None
     
-    async def get_runs(self, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_runs(self) -> List[Dict[str, Any]]:
         """Get all valuation runs from MongoDB."""
         try:
-            cursor = self.db.runs.find().sort("created_at", -1).limit(limit)
+            if not self.db:
+                await self.connect()
+            
+            # Get all runs, sorted by creation time
+            cursor = self.db.runs.find().sort("metadata.calculation_timestamp", -1)
             runs = []
             async for run in cursor:
-                # Convert ObjectId to string
+                # Convert ObjectId to string for JSON serialization
                 run["_id"] = str(run["_id"])
                 runs.append(run)
+            
+            print(f"✅ Retrieved {len(runs)} runs from MongoDB")
             return runs
         except Exception as e:
             print(f"❌ Error getting runs: {e}")
             return []
     
-    async def get_run_by_id(self, run_id: str) -> Optional[Dict[str, Any]]:
-        """Get a specific run by ID."""
-        try:
-            from bson import ObjectId
-            run = await self.db.runs.find_one({"_id": ObjectId(run_id)})
-            if run:
-                run["_id"] = str(run["_id"])
-            return run
-        except Exception as e:
-            print(f"❌ Error getting run {run_id}: {e}")
-            return None
-    
-    async def update_run(self, run_id: str, update_data: Dict[str, Any]) -> bool:
-        """Update a run in MongoDB."""
-        try:
-            from bson import ObjectId
-            update_data["updated_at"] = datetime.utcnow()
-            result = await self.db.runs.update_one(
-                {"_id": ObjectId(run_id)},
-                {"$set": update_data}
-            )
-            return result.modified_count > 0
-        except Exception as e:
-            print(f"❌ Error updating run {run_id}: {e}")
-            return False
-    
-    async def delete_run(self, run_id: str) -> bool:
-        """Delete a run from MongoDB."""
-        try:
-            from bson import ObjectId
-            result = await self.db.runs.delete_one({"_id": ObjectId(run_id)})
-            return result.deleted_count > 0
-        except Exception as e:
-            print(f"❌ Error deleting run {run_id}: {e}")
-            return False
-    
     async def get_database_stats(self) -> Dict[str, Any]:
         """Get database statistics."""
         try:
-            run_count = await self.db.runs.count_documents({})
-            curve_count = await self.db.curves.count_documents({})
+            if not self.db:
+                await self.connect()
+            
+            # Get collection stats
+            runs_count = await self.db.runs.count_documents({})
+            curves_count = await self.db.curves.count_documents({})
             
             # Get recent runs
             recent_runs = []
-            cursor = self.db.runs.find().sort("created_at", -1).limit(5)
+            cursor = self.db.runs.find().sort("metadata.calculation_timestamp", -1).limit(5)
             async for run in cursor:
                 recent_runs.append({
-                    "id": str(run["_id"]),
-                    "status": run.get("status", "unknown"),
-                    "instrument_type": run.get("instrument_type", "unknown"),
-                    "currency": run.get("currency", "unknown"),
-                    "notional_amount": run.get("notional_amount", 0),
-                    "created_at": run.get("created_at", "").isoformat() if run.get("created_at") else ""
+                    "id": run.get("id", "Unknown"),
+                    "instrument_type": run.get("instrument_type", "Unknown"),
+                    "pv_base_ccy": run.get("pv_base_ccy", 0),
+                    "timestamp": run.get("metadata", {}).get("calculation_timestamp", "Unknown")
                 })
             
             return {
-                "database_type": "MongoDB (Azure Cosmos DB)",
-                "database_name": self.database_name,
-                "total_runs": run_count,
-                "total_curves": curve_count,
+                "total_runs": runs_count,
+                "total_curves": curves_count,
                 "recent_runs": recent_runs,
-                "message": "Data is stored in Azure Cosmos DB and visible in Data Explorer"
+                "database_name": self.database_name,
+                "connection_status": "connected" if self.client else "disconnected"
             }
         except Exception as e:
             print(f"❌ Error getting database stats: {e}")
             return {
-                "database_type": "MongoDB (Azure Cosmos DB)",
+                "total_runs": 0,
+                "total_curves": 0,
+                "recent_runs": [],
                 "database_name": self.database_name,
-                "error": str(e),
-                "message": "Error connecting to database"
+                "connection_status": "error",
+                "error": str(e)
             }
     
     async def create_curve(self, curve_data: Dict[str, Any]) -> str:
         """Create a new yield curve in MongoDB."""
         try:
-            # Add timestamp
-            curve_data["created_at"] = datetime.utcnow()
-            curve_data["updated_at"] = datetime.utcnow()
+            if not self.db:
+                await self.connect()
             
-            # Insert into curves collection
+            # Insert the curve
             result = await self.db.curves.insert_one(curve_data)
-            print(f"✅ Curve created with ID: {result.inserted_id}")
+            print(f"✅ Created curve with ID: {result.inserted_id}")
             return str(result.inserted_id)
         except Exception as e:
             print(f"❌ Error creating curve: {e}")
-            raise e
+            return None
     
-    async def get_curves(self, limit: int = 50) -> List[Dict[str, Any]]:
+    async def get_curves(self) -> List[Dict[str, Any]]:
         """Get all yield curves from MongoDB."""
         try:
-            cursor = self.db.curves.find().sort("created_at", -1).limit(limit)
+            if not self.db:
+                await self.connect()
+            
+            # Get all curves
+            cursor = self.db.curves.find()
             curves = []
             async for curve in cursor:
-                # Convert ObjectId to string
+                # Convert ObjectId to string for JSON serialization
                 curve["_id"] = str(curve["_id"])
                 curves.append(curve)
+            
+            print(f"✅ Retrieved {len(curves)} curves from MongoDB")
             return curves
         except Exception as e:
             print(f"❌ Error getting curves: {e}")
