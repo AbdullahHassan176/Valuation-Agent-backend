@@ -97,25 +97,195 @@ async def call_llm(user_message: str, context_data: Dict[str, Any] = None) -> st
                 "Content-Type": "application/json"
             }
             
-            payload = {
-                "model": "gpt-4",
-                "messages": messages,
-                "temperature": 0.7,
-                "max_tokens": 1000
-            }
+            # Try different models in order of preference
+            models_to_try = ["gpt-4", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"]
             
-            async with session.post(f"{OPENAI_BASE_URL}/chat/completions", 
-                                 headers=headers, 
-                                 json=payload) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return data["choices"][0]["message"]["content"]
-                else:
-                    error_text = await response.text()
-                    return f"I encountered an error with the AI service: {response.status} - {error_text}"
+            for model in models_to_try:
+                try:
+                    payload = {
+                        "model": model,
+                        "messages": messages,
+                        "temperature": 0.7,
+                        "max_tokens": 1000
+                    }
+                    
+                    async with session.post(f"{OPENAI_BASE_URL}/chat/completions", 
+                                         headers=headers, 
+                                         json=payload) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            return data["choices"][0]["message"]["content"]
+                        elif response.status == 404:
+                            print(f"Model {model} not available, trying next...")
+                            continue
+                        else:
+                            error_text = await response.text()
+                            return f"I encountered an error with the AI service: {response.status} - {error_text}"
+                except Exception as e:
+                    print(f"Error with model {model}: {e}")
+                    continue
+            
+            return "I'm sorry, but I don't have access to any compatible AI models. Please check the API configuration."
     
     except Exception as e:
         return f"I'm sorry, but I encountered an error while processing your request: {str(e)}"
+
+# Fallback response generator for when LLM is not available
+def generate_fallback_response(message: str, context_data: Dict[str, Any]) -> str:
+    """Generate intelligent fallback responses when LLM is not available."""
+    user_message = message.lower()
+    
+    # Get context information
+    runs = context_data.get("runs", [])
+    curves = context_data.get("curves", [])
+    system_status = context_data.get("system_status", "Unknown")
+    
+    # Greeting responses
+    if any(word in user_message for word in ["hello", "hi", "hey", "good morning", "good afternoon"]):
+        return f"""Hello! I'm your AI valuation auditor and specialist. 
+
+**Current System Status:**
+{system_status}
+
+**Available Data:**
+- {len(runs)} valuation runs
+- {len(curves)} yield curves
+
+I can help you with:
+• Analyzing valuation runs and methodologies
+• IFRS 13 compliance and audit procedures  
+• Risk analysis and sensitivity testing
+• Yield curve construction and validation
+
+What would you like to know about your valuation data?"""
+
+    # Runs analysis
+    elif any(word in user_message for word in ["runs", "valuation", "latest", "show me"]):
+        if runs:
+            response = f"**📊 Valuation Runs Analysis:**\n\n"
+            for i, run in enumerate(runs[:3], 1):
+                instrument_type = run.get('instrument_type', 'Unknown')
+                currency = run.get('currency', 'Unknown')
+                pv = run.get('pv_base_ccy', 0)
+                status = run.get('status', 'Unknown')
+                
+                response += f"**Run {i}: {run.get('id', 'Unknown')}**\n"
+                response += f"• Type: {instrument_type} ({currency})\n"
+                response += f"• Status: {status}\n"
+                response += f"• Present Value: ${pv:,.2f}\n\n"
+            
+            response += "**Audit Recommendations:**\n"
+            response += "• Verify present value calculations against market data\n"
+            response += "• Review risk metrics and sensitivities\n"
+            response += "• Ensure IFRS 13 compliance documentation\n"
+            response += "• Validate curve interpolation methodology"
+            
+            return response
+        else:
+            return "No valuation runs found. I can help you create and analyze new valuations once you have data."
+
+    # Curves analysis
+    elif any(word in user_message for word in ["curves", "yield", "rates"]):
+        if curves:
+            response = f"**📈 Yield Curve Analysis:**\n\n"
+            for curve in curves[:3]:
+                currency = curve.get('currency', 'Unknown')
+                curve_type = curve.get('type', 'Unknown')
+                nodes = curve.get('nodes', [])
+                
+                response += f"**{currency} {curve_type} Curve:**\n"
+                response += f"• Tenor points: {len(nodes)}\n"
+                if nodes:
+                    sample_rates = nodes[:3]
+                    response += f"• Sample rates: "
+                    for node in sample_rates:
+                        tenor = node.get('tenor', 'N/A')
+                        rate = node.get('rate', 0)
+                        response += f"{tenor} {rate:.3%}, "
+                    response = response.rstrip(", ") + "\n"
+                response += "\n"
+            
+            response += "**Audit Considerations:**\n"
+            response += "• Verify curve construction methodology\n"
+            response += "• Validate interpolation techniques\n"
+            response += "• Review market data sources and timestamps\n"
+            response += "• Check for curve smoothness and arbitrage-free conditions"
+            
+            return response
+        else:
+            return "No yield curves available. I can help you construct and validate curves once you have market data."
+
+    # IFRS and compliance
+    elif any(word in user_message for word in ["ifrs", "compliance", "audit", "fair value"]):
+        return """**🔍 IFRS 13 Fair Value Measurement - Audit Focus:**
+
+**Key Audit Areas:**
+• **Level 1 Inputs**: Verify quoted prices in active markets
+• **Level 2 Inputs**: Validate observable market data and pricing models
+• **Level 3 Inputs**: Review unobservable inputs and management assumptions
+
+**Critical Audit Procedures:**
+• Test valuation model accuracy and completeness
+• Verify market data sources and timestamps
+• Review sensitivity analysis and stress testing
+• Validate documentation and controls
+
+**Common Issues to Watch:**
+• Inappropriate model selection
+• Stale or incorrect market data
+• Inadequate sensitivity analysis
+• Poor documentation of assumptions
+
+What specific aspect of IFRS 13 compliance would you like me to help you audit?"""
+
+    # Help and capabilities
+    elif any(word in user_message for word in ["help", "what can you do", "capabilities"]):
+        return f"""**🤖 AI Valuation Auditor Capabilities:**
+
+**📊 Data Analysis:**
+• Analyze {len(runs)} valuation runs
+• Review {len(curves)} yield curves
+• System status: {system_status}
+
+**🔍 Audit Expertise:**
+• IFRS 13 Fair Value Measurement
+• Financial instrument valuations (IRS, CCS, Bonds)
+• Risk management and regulatory compliance
+• Audit procedures and documentation
+
+**💡 What I Can Help With:**
+• Valuation methodology review
+• Risk metric analysis
+• Compliance verification
+• Documentation audit
+• Sensitivity testing guidance
+
+**Ask me about:**
+• Specific valuation runs
+• Yield curve construction
+• IFRS compliance requirements
+• Risk analysis techniques"""
+
+    # Default response
+    else:
+        return f"""I understand you're asking about "{message}". 
+
+As your AI valuation auditor, I can help you with:
+
+**📊 Current System Status:**
+{system_status}
+
+**Available for Analysis:**
+- {len(runs)} valuation runs
+- {len(curves)} yield curves
+
+**What I Can Help With:**
+• Valuation methodology review
+• IFRS 13 compliance audit
+• Risk analysis and metrics
+• Documentation verification
+
+Could you be more specific about what you'd like me to analyze or audit?"""
 
 # Initialize MongoDB connection
 async def init_database():
@@ -710,6 +880,18 @@ async def chat_post(request: dict = None):
         
         # Call LLM with context
         llm_response = await call_llm(message, context_data)
+        
+        # If LLM fails, provide a fallback response
+        if "I'm sorry, but I don't have access" in llm_response or "I encountered an error" in llm_response:
+            # Fallback to intelligent rule-based response
+            fallback_response = generate_fallback_response(message, context_data)
+            return {
+                "response": fallback_response,
+                "status": "success",
+                "version": "3.0",
+                "llm_powered": False,
+                "fallback": True
+            }
         
         return {
             "response": llm_response,
