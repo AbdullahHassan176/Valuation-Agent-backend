@@ -398,11 +398,29 @@ async def create_curves():
 
 @app.get("/poc/chat")
 async def chat_get():
-    return {"message": "Chat endpoint active", "status": "ready"}
+    return {"message": "Chat endpoint active - NEW VERSION DEPLOYED", "status": "ready", "version": "2.0"}
+
+@app.get("/api/test/chat")
+async def test_chat():
+    """Test endpoint to verify chat functionality is working."""
+    return {
+        "message": "Chat test endpoint working",
+        "status": "success",
+        "version": "2.0",
+        "features": [
+            "Intelligent responses",
+            "Runs query",
+            "Curves query", 
+            "Health check",
+            "Help system"
+        ]
+    }
 
 @app.post("/poc/chat")
 async def chat_post(request: dict = None):
     """Process chat messages and provide intelligent responses."""
+    print(f"🔍 Chat endpoint called with request: {request}")
+    
     if not request or not request.get("message"):
         return {
             "response": "Hello! I'm your valuation assistant. How can I help you today?",
