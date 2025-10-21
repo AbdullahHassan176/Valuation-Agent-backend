@@ -154,6 +154,58 @@ async def create_run(request: dict):
         print(f"❌ Error creating run: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Run details endpoint
+@app.get("/api/valuation/runs/{run_id}/details")
+async def get_run_details(run_id: str):
+    """Get detailed analysis for a specific run."""
+    try:
+        # Find the run in fallback storage
+        run_data = next((run for run in fallback_runs if run.get("id") == run_id), None)
+        
+        if not run_data:
+            raise HTTPException(status_code=404, detail="Run not found")
+        
+        # Create comprehensive analysis
+        analysis = {
+            "run_id": run_id,
+            "as_of": run_data.get("asOf"),
+            "instrument_type": run_data.get("instrument_type", "Unknown"),
+            "status": run_data.get("status", "Unknown"),
+            "created_at": run_data.get("created_at"),
+            "summary": {
+                "notional": run_data.get("notional"),
+                "currency": run_data.get("currency"),
+                "tenor": run_data.get("tenor"),
+                "fixed_rate": run_data.get("fixedRate"),
+                "floating_index": run_data.get("floatingIndex"),
+                "pv": run_data.get("pv"),
+                "pv01": run_data.get("pv01")
+            },
+            "valuation_analysis": {
+                "present_value": run_data.get("pv"),
+                "pv01": run_data.get("pv01"),
+                "risk_metrics": {
+                    "duration": run_data.get("tenor", "5Y").replace("Y", ""),
+                    "convexity": "N/A",
+                    "var_1d_99pct": "N/A"
+                }
+            },
+            "methodology": {
+                "valuation_framework": "Simplified Calculation",
+                "model": "Basic Discounting",
+                "assumptions": {
+                    "discount_curve_type": "Flat Curve",
+                    "day_count_convention": "Actual/360"
+                }
+            }
+        }
+        
+        return analysis
+        
+    except Exception as e:
+        print(f"❌ Error getting run details: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Test endpoint
 @app.get("/api/test/simple")
 async def test_simple():
