@@ -13,10 +13,10 @@ sys.path.insert(0, str(current_dir))
 
 print(f"🔍 Starting ultra-minimal backend service from: {current_dir}")
 
-# Import and run the QuantLib simple app
+# Import and run the Ultra Minimal app with runs endpoints
 try:
-    from app_quantlib_simple import app
-    print("✅ QuantLib simple app imported successfully")
+    from app_ultra_minimal import app
+    print("✅ Ultra minimal app imported successfully")
     
     if __name__ == "__main__":
         import uvicorn
@@ -30,11 +30,11 @@ except Exception as e:
     import traceback
     print(f"❌ Traceback: {traceback.format_exc()}")
     
-    # Try minimal simple app as fallback
+    # Try QuantLib simple app as fallback
     try:
-        print("🔍 Trying minimal simple app as fallback...")
-        from app_minimal_simple import app
-        print("✅ Minimal simple app imported successfully")
+        print("🔍 Trying QuantLib simple app as fallback...")
+        from app_quantlib_simple import app
+        print("✅ QuantLib simple app imported successfully")
         
         if __name__ == "__main__":
             import uvicorn
