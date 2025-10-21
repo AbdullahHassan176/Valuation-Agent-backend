@@ -1054,6 +1054,42 @@ async def test_groq_config():
         "api_key_preview": f"{GROQ_API_KEY[:8]}..." if GROQ_API_KEY else "Not set"
     }
 
+# Test endpoint to debug MongoDB issues
+@app.get("/api/test/mongodb-debug")
+async def test_mongodb_debug():
+    """Debug MongoDB connection and operations."""
+    try:
+        debug_info = {
+            "mongodb_client_available": mongodb_client is not None,
+            "db_initialized": db_initialized,
+            "mongodb_available": MONGODB_AVAILABLE,
+            "connection_string_set": bool(MONGODB_CONNECTION_STRING),
+            "database_name": MONGODB_DATABASE
+        }
+        
+        if mongodb_client and db_initialized:
+            # Test direct MongoDB operations
+            try:
+                runs_count = await mongodb_client.db.runs.count_documents({})
+                debug_info["runs_count_direct"] = runs_count
+                
+                # Try to get one run
+                sample_run = await mongodb_client.db.runs.find_one()
+                debug_info["sample_run"] = sample_run
+                
+                # Test get_runs method
+                runs_via_method = await mongodb_client.get_runs()
+                debug_info["runs_via_method"] = len(runs_via_method)
+                debug_info["runs_via_method_sample"] = runs_via_method[0] if runs_via_method else None
+                
+            except Exception as e:
+                debug_info["mongodb_error"] = str(e)
+        
+        return debug_info
+        
+    except Exception as e:
+        return {"error": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
