@@ -434,6 +434,81 @@ async def get_runs():
         print(f"❌ Error getting runs: {e}")
         return fallback_runs
 
+@app.get("/api/valuation/runs/all")
+async def get_all_runs():
+    """Get all runs for 'All Runs' tab."""
+    try:
+        if db_initialized and mongodb_client:
+            runs = await mongodb_client.get_runs()
+            # Sort by created_at descending
+            runs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+            return runs
+        else:
+            return fallback_runs
+    except Exception as e:
+        print(f"❌ Error getting all runs: {e}")
+        return fallback_runs
+
+@app.get("/api/valuation/runs/my")
+async def get_my_runs():
+    """Get user's runs for 'My Runs' tab."""
+    try:
+        if db_initialized and mongodb_client:
+            runs = await mongodb_client.get_runs()
+            # Filter for user's runs (for now, return all runs)
+            # In production, you'd filter by user_id
+            runs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+            return runs
+        else:
+            return fallback_runs
+    except Exception as e:
+        print(f"❌ Error getting my runs: {e}")
+        return fallback_runs
+
+@app.get("/api/valuation/runs/recent")
+async def get_recent_runs():
+    """Get recent runs for 'Recent' tab."""
+    try:
+        if db_initialized and mongodb_client:
+            runs = await mongodb_client.get_runs()
+            # Get runs from last 7 days
+            from datetime import datetime, timedelta
+            recent_cutoff = datetime.now() - timedelta(days=7)
+            recent_runs = [
+                run for run in runs 
+                if datetime.fromisoformat(run.get("created_at", "1970-01-01").replace("Z", "")) > recent_cutoff
+            ]
+            recent_runs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+            return recent_runs
+        else:
+            # Return last 3 runs from fallback
+            return fallback_runs[-3:] if len(fallback_runs) > 3 else fallback_runs
+    except Exception as e:
+        print(f"❌ Error getting recent runs: {e}")
+        return fallback_runs
+
+@app.get("/api/valuation/runs/archived")
+async def get_archived_runs():
+    """Get archived runs for 'Archived' tab."""
+    try:
+        if db_initialized and mongodb_client:
+            runs = await mongodb_client.get_runs()
+            # Filter for archived runs (status = 'archived' or older than 30 days)
+            from datetime import datetime, timedelta
+            archive_cutoff = datetime.now() - timedelta(days=30)
+            archived_runs = [
+                run for run in runs 
+                if run.get("status") == "archived" or 
+                datetime.fromisoformat(run.get("created_at", "1970-01-01").replace("Z", "")) < archive_cutoff
+            ]
+            archived_runs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+            return archived_runs
+        else:
+            return []
+    except Exception as e:
+        print(f"❌ Error getting archived runs: {e}")
+        return []
+
 @app.post("/api/valuation/runs")
 async def create_run(request: dict):
     """Create a new valuation run with actual calculations."""
@@ -483,15 +558,36 @@ async def create_run(request: dict):
                 fx_rate=fx_rate
             )
         
-        # Create run with valuation results
+        # Create run with valuation results - match frontend interface
+        run_id = f"run-{int(datetime.now().timestamp() * 1000)}"
+        notional = spec.get("notional", 10000000)
+        currency = spec.get("ccy", "USD")
+        tenor_years = spec.get("tenor_years", 5.0)
+        fixed_rate = spec.get("fixedRate", 0.035)
+        
+        # Calculate PV01 (simplified)
+        pv01 = abs(valuation_result.get("npv_base_ccy", 0.0)) * 0.0001 if valuation_result else 0.0
+        
         new_run = {
-            "id": f"run-{len(fallback_runs) + 1:03d}",
+            "id": run_id,
+            "name": f"{currency} {datetime.now().strftime('%Y-%m-%d')} {instrument_type}",
+            "type": instrument_type,
+            "status": "completed",
+            "notional": notional,
+            "currency": currency,
+            "tenor": f"{tenor_years}Y",
+            "fixedRate": fixed_rate,
+            "floatingIndex": "SOFR" if currency == "USD" else "EURIBOR",
+            "pv": valuation_result.get("npv_base_ccy", 0.0) if valuation_result else 0.0,
+            "pv01": pv01,
+            "created_at": datetime.now().isoformat(),
+            "completed_at": datetime.now().isoformat(),
+            "progress": 100,
+            # Additional backend fields
             "asOf": as_of,
             "spec": spec,
             "instrument_type": instrument_type,
             "pv_base_ccy": valuation_result.get("npv_base_ccy", 0.0) if valuation_result else 0.0,
-            "status": "completed",
-            "created_at": datetime.now().isoformat(),
             "valuation_result": valuation_result,
             "calculation_details": {
                 "method": "simplified_valuation",
@@ -765,6 +861,77 @@ async def test_mongodb():
             "connection_string_present": bool(MONGODB_CONNECTION_STRING),
             "use_mongodb": USE_MONGODB
         }
+
+# Run management endpoints
+@app.put("/api/valuation/runs/{run_id}/archive")
+async def archive_run(run_id: str):
+    """Archive a run."""
+    try:
+        if db_initialized and mongodb_client:
+            # Update run status to archived
+            result = await mongodb_client.db.runs.update_one(
+                {"id": run_id},
+                {"$set": {"status": "archived", "archived_at": datetime.now().isoformat()}}
+            )
+            if result.modified_count > 0:
+                return {"success": True, "message": "Run archived successfully"}
+            else:
+                return {"success": False, "message": "Run not found"}
+        else:
+            # Update fallback storage
+            for run in fallback_runs:
+                if run.get("id") == run_id:
+                    run["status"] = "archived"
+                    run["archived_at"] = datetime.now().isoformat()
+                    return {"success": True, "message": "Run archived successfully"}
+            return {"success": False, "message": "Run not found"}
+    except Exception as e:
+        print(f"❌ Error archiving run: {e}")
+        return {"success": False, "message": str(e)}
+
+@app.delete("/api/valuation/runs/{run_id}")
+async def delete_run(run_id: str):
+    """Delete a run."""
+    try:
+        if db_initialized and mongodb_client:
+            result = await mongodb_client.db.runs.delete_one({"id": run_id})
+            if result.deleted_count > 0:
+                return {"success": True, "message": "Run deleted successfully"}
+            else:
+                return {"success": False, "message": "Run not found"}
+        else:
+            # Remove from fallback storage
+            global fallback_runs
+            fallback_runs = [run for run in fallback_runs if run.get("id") != run_id]
+            return {"success": True, "message": "Run deleted successfully"}
+    except Exception as e:
+        print(f"❌ Error deleting run: {e}")
+        return {"success": False, "message": str(e)}
+
+@app.put("/api/valuation/runs/{run_id}/restore")
+async def restore_run(run_id: str):
+    """Restore an archived run."""
+    try:
+        if db_initialized and mongodb_client:
+            result = await mongodb_client.db.runs.update_one(
+                {"id": run_id},
+                {"$set": {"status": "completed", "restored_at": datetime.now().isoformat()}}
+            )
+            if result.modified_count > 0:
+                return {"success": True, "message": "Run restored successfully"}
+            else:
+                return {"success": False, "message": "Run not found"}
+        else:
+            # Update fallback storage
+            for run in fallback_runs:
+                if run.get("id") == run_id:
+                    run["status"] = "completed"
+                    run["restored_at"] = datetime.now().isoformat()
+                    return {"success": True, "message": "Run restored successfully"}
+            return {"success": False, "message": "Run not found"}
+    except Exception as e:
+        print(f"❌ Error restoring run: {e}")
+        return {"success": False, "message": str(e)}
 
 # Detailed run analysis endpoint
 @app.get("/api/valuation/runs/{run_id}/details")
