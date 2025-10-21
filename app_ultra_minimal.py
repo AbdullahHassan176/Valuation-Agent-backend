@@ -1106,6 +1106,47 @@ async def test_groq_config():
         "api_key_preview": f"{GROQ_API_KEY[:8]}..." if GROQ_API_KEY else "Not set"
     }
 
+# Simple test endpoint for run creation
+@app.post("/api/test/create-simple-run")
+async def test_create_simple_run():
+    """Test creating a simple run without complex valuation."""
+    try:
+        run_id = f"test-run-{int(datetime.now().timestamp() * 1000)}"
+        
+        simple_run = {
+            "id": run_id,
+            "name": "Test Run",
+            "type": "IRS",
+            "status": "completed",
+            "notional": 10000000,
+            "currency": "USD",
+            "tenor": "5Y",
+            "fixedRate": 0.035,
+            "floatingIndex": "SOFR",
+            "pv": 100000.0,
+            "pv01": 1000.0,
+            "created_at": datetime.now().isoformat(),
+            "completed_at": datetime.now().isoformat(),
+            "progress": 100
+        }
+        
+        # Add to fallback storage
+        fallback_runs.append(simple_run)
+        print(f"✅ Created simple test run: {run_id}")
+        
+        return {
+            "success": True,
+            "run_id": run_id,
+            "message": "Simple run created successfully"
+        }
+        
+    except Exception as e:
+        print(f"❌ Error creating simple run: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 # Test endpoint to debug MongoDB issues
 @app.get("/api/test/mongodb-debug")
 async def test_mongodb_debug():
