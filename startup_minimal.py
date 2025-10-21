@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Minimal startup script for Azure deployment
-Focuses on core functionality without heavy dependencies
+Minimal startup script for Azure App Service
 """
 
 import os
@@ -12,16 +11,29 @@ from pathlib import Path
 current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 
+print(f"🔍 Starting minimal backend service from: {current_dir}")
+print(f"🔍 Python path: {sys.path[:3]}")
+
+# Import and run the minimal app
 try:
-    from simple_app import app
-    print("✅ Simple app imported successfully")
+    from app_minimal import app
+    print("✅ Minimal app imported successfully")
+    
+    if __name__ == "__main__":
+        import uvicorn
+        port = int(os.environ.get("PORT", 8000))
+        print(f"🚀 Starting minimal backend on port {port}")
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+        
 except Exception as e:
-    print(f"❌ Error importing simple_app: {e}")
-    # Create minimal FastAPI app as fallback
+    print(f"❌ Error starting minimal app: {e}")
+    print(f"❌ Error type: {type(e).__name__}")
+    
+    # Create a basic FastAPI app as absolute fallback
     from fastapi import FastAPI
     from fastapi.middleware.cors import CORSMiddleware
     
-    app = FastAPI(title="Valuation Backend - Minimal Mode")
+    app = FastAPI(title="Valuation Backend - Emergency Fallback")
     
     app.add_middleware(
         CORSMiddleware,
@@ -33,14 +45,14 @@ except Exception as e:
     
     @app.get("/")
     async def root():
-        return {"message": "Valuation Backend - Minimal Mode", "status": "running"}
+        return {"message": "Valuation Backend - Emergency Fallback", "status": "running"}
     
     @app.get("/healthz")
     async def health():
-        return {"status": "healthy", "mode": "minimal"}
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    print(f"🚀 Starting minimal backend on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+        return {"status": "healthy", "mode": "emergency_fallback"}
+    
+    if __name__ == "__main__":
+        import uvicorn
+        port = int(os.environ.get("PORT", 8000))
+        print(f"🚀 Starting emergency fallback on port {port}")
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
