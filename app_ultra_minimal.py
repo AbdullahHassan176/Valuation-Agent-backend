@@ -1167,6 +1167,65 @@ async def test_echo_request(request: dict):
             "error": str(e)
         }
 
+# Minimal run creation test
+@app.post("/api/test/create-minimal-run")
+async def test_create_minimal_run(request: dict):
+    """Test creating a minimal run with the same structure as the main endpoint."""
+    try:
+        print(f"🔍 Minimal run creation with request: {request}")
+        
+        spec = request.get("spec", {})
+        as_of = request.get("asOf", datetime.now().strftime("%Y-%m-%d"))
+        
+        # Create a simple run without complex valuation
+        run_id = f"minimal-run-{int(datetime.now().timestamp() * 1000)}"
+        notional = spec.get("notional", 10000000)
+        currency = spec.get("ccy", "USD")
+        tenor_years = spec.get("tenor_years", 5.0)
+        fixed_rate = spec.get("fixedRate", 0.035)
+        instrument_type = spec.get("instrument_type", "IRS")
+        
+        # Simple NPV calculation
+        npv_value = notional * 0.01  # 1% of notional
+        pv01 = abs(npv_value) * 0.0001
+        
+        new_run = {
+            "id": run_id,
+            "name": f"{currency} {datetime.now().strftime('%Y-%m-%d')} {instrument_type}",
+            "type": instrument_type,
+            "status": "completed",
+            "notional": notional,
+            "currency": currency,
+            "tenor": f"{tenor_years}Y",
+            "fixedRate": fixed_rate,
+            "floatingIndex": "SOFR" if currency == "USD" else "EURIBOR",
+            "pv": npv_value,
+            "pv01": pv01,
+            "created_at": datetime.now().isoformat(),
+            "completed_at": datetime.now().isoformat(),
+            "progress": 100,
+            "asOf": as_of,
+            "spec": spec,
+            "instrument_type": instrument_type,
+            "pv_base_ccy": npv_value
+        }
+        
+        # Store in fallback storage
+        fallback_runs.append(new_run)
+        print(f"✅ Minimal run created: {run_id}")
+        
+        return new_run
+        
+    except Exception as e:
+        print(f"❌ Error in minimal run creation: {e}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 # Simple test endpoint for run creation
 @app.post("/api/test/create-simple-run")
 async def test_create_simple_run():
