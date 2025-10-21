@@ -65,7 +65,12 @@ Always maintain audit-quality standards and provide thorough, well-reasoned resp
 async def call_llm(user_message: str, context_data: Dict[str, Any] = None) -> str:
     """Call LLM with user message and context data."""
     if not OPENAI_API_KEY:
+        print("❌ OPENAI_API_KEY not configured")
         return "I'm sorry, but I don't have access to the AI language model right now. Please check the configuration."
+    
+    print(f"🔍 Calling LLM with message: {user_message[:50]}...")
+    print(f"🔍 API Key configured: {bool(OPENAI_API_KEY)}")
+    print(f"🔍 Base URL: {OPENAI_BASE_URL}")
     
     try:
         # Prepare context information
@@ -98,10 +103,13 @@ async def call_llm(user_message: str, context_data: Dict[str, Any] = None) -> st
             }
             
             # Try different models in order of preference
-            models_to_try = ["gpt-4", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"]
+            # Check if a specific model is configured
+            configured_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+            models_to_try = [configured_model, "gpt-4o-mini", "gpt-4", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"]
             
             for model in models_to_try:
                 try:
+                    print(f"🔍 Trying model: {model}")
                     payload = {
                         "model": model,
                         "messages": messages,
@@ -112,17 +120,20 @@ async def call_llm(user_message: str, context_data: Dict[str, Any] = None) -> st
                     async with session.post(f"{OPENAI_BASE_URL}/chat/completions", 
                                          headers=headers, 
                                          json=payload) as response:
+                        print(f"🔍 Response status: {response.status}")
                         if response.status == 200:
                             data = await response.json()
+                            print(f"✅ LLM response received from {model}")
                             return data["choices"][0]["message"]["content"]
                         elif response.status == 404:
-                            print(f"Model {model} not available, trying next...")
+                            print(f"❌ Model {model} not available, trying next...")
                             continue
                         else:
                             error_text = await response.text()
+                            print(f"❌ Error with model {model}: {response.status} - {error_text}")
                             return f"I encountered an error with the AI service: {response.status} - {error_text}"
                 except Exception as e:
-                    print(f"Error with model {model}: {e}")
+                    print(f"❌ Exception with model {model}: {e}")
                     continue
             
             return "I'm sorry, but I don't have access to any compatible AI models. Please check the API configuration."
