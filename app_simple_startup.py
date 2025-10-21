@@ -257,6 +257,99 @@ async def get_valuation_report(run_id: str):
         print(f"❌ Error generating valuation report: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Curves endpoint
+@app.get("/api/valuation/curves")
+async def get_curves():
+    """Get all yield curves."""
+    return [
+        {
+            "id": "curve-001",
+            "name": "USD SOFR Curve",
+            "currency": "USD",
+            "type": "SOFR",
+            "rates": [0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05],
+            "tenors": [0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 30.0],
+            "created_at": datetime.now().isoformat()
+        }
+    ]
+
+# Chat endpoint
+@app.post("/poc/chat")
+async def chat(request: dict):
+    """AI chat endpoint."""
+    try:
+        message = request.get("message", "")
+        
+        # Simple AI responses
+        if "hello" in message.lower() or "hi" in message.lower():
+            response = "Hello! I'm your AI valuation assistant. How can I help you with financial calculations today?"
+        elif "irshad" in message.lower():
+            response = "Ah, Irshad! The legendary risk quant who still uses Excel for everything. Did you know he once tried to calculate VaR using a slide rule? 😄"
+        elif "valuation" in message.lower():
+            response = "I can help you with IRS and CCS valuations using QuantLib. What instrument would you like to analyze?"
+        else:
+            response = f"I received your message: '{message}'. I'm here to help with financial valuations and risk analysis!"
+        
+        return {
+            "response": response,
+            "llm_powered": False,
+            "model": "simple_chat",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# Curves endpoint
+@app.get("/api/valuation/curves")
+async def get_curves():
+    """Get yield curves."""
+    return {
+        "curves": [
+            {
+                "id": "curve-001",
+                "name": "USD OIS Curve",
+                "currency": "USD",
+                "type": "OIS",
+                "rates": [0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05],
+                "tenors": [0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 30.0],
+                "created_at": datetime.now().isoformat()
+            }
+        ]
+    }
+
+# Chat endpoint
+@app.post("/poc/chat")
+async def chat(request: dict):
+    """Chat with AI agent."""
+    try:
+        message = request.get("message", "")
+        
+        # Simple AI responses
+        if "hello" in message.lower() or "hi" in message.lower():
+            response = "Hello! I'm your AI valuation assistant. How can I help you with financial calculations today?"
+        elif "irshad" in message.lower():
+            response = "Ah, Irshad! The legendary accountant who thinks Excel is a programming language. Did you know he still uses a calculator for 2+2? 😄"
+        elif "valuation" in message.lower():
+            response = "I can help you with IRS and CCS valuations using QuantLib. What specific instrument would you like to analyze?"
+        elif "xva" in message.lower():
+            response = "XVA calculations include CVA, DVA, FVA, KVA, and MVA adjustments. Which XVA components are you interested in?"
+        else:
+            response = f"I understand you're asking about: '{message}'. As an AI valuation specialist, I can help with financial calculations, risk analysis, and regulatory compliance. What specific area would you like to explore?"
+        
+        return {
+            "response": response,
+            "llm_powered": False,
+            "model": "simple_ai",
+            "fallback": True,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "response": f"Sorry, I encountered an error: {str(e)}",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
 # Test endpoint
 @app.get("/api/test/simple")
 async def test_simple():
