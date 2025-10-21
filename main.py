@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main entry point for Azure App Service
+Main entry point for Azure App Service - Minimal Mode
 """
 
 import os
@@ -11,41 +11,14 @@ from pathlib import Path
 current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 
-print(f"🔍 Starting backend service from: {current_dir}")
+print(f"🔍 Starting minimal backend service from: {current_dir}")
 print(f"🔍 Python path: {sys.path[:3]}")
 
-try:
-    from simple_app import app
-    print("✅ Simple app imported successfully")
-except Exception as e:
-    print(f"❌ Error importing simple_app: {e}")
-    print(f"❌ Error type: {type(e).__name__}")
-    print(f"❌ Traceback: {e}")
-    
-    # Create minimal FastAPI app as fallback
-    from fastapi import FastAPI
-    from fastapi.middleware.cors import CORSMiddleware
-    
-    app = FastAPI(title="Valuation Backend - Fallback Mode")
-    
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    
-    @app.get("/")
-    async def root():
-        return {"message": "Valuation Backend - Fallback Mode", "status": "running"}
-    
-    @app.get("/healthz")
-    async def health():
-        return {"status": "healthy", "mode": "fallback"}
+# Use minimal app directly
+from app_minimal import app
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    print(f"🚀 Starting backend on port {port}")
+    print(f"🚀 Starting minimal backend on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
