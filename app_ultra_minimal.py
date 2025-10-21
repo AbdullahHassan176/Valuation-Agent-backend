@@ -426,7 +426,31 @@ async def get_runs():
             print("📊 Fetching runs from MongoDB...")
             runs = await mongodb_client.get_runs()
             print(f"✅ Retrieved {len(runs)} runs from MongoDB")
-            return runs
+            
+            # Transform runs to match frontend interface
+            transformed_runs = []
+            for run in runs:
+                # Ensure the run has the required fields for frontend
+                transformed_run = {
+                    "id": run.get("id", f"run-{run.get('_id', 'unknown')}"),
+                    "name": run.get("name", f"{run.get('currency', 'USD')} {run.get('tenor', '5Y')} {run.get('type', 'IRS')}"),
+                    "type": run.get("type", "IRS"),
+                    "status": run.get("status", "completed"),
+                    "notional": run.get("notional", 0),
+                    "currency": run.get("currency", "USD"),
+                    "tenor": run.get("tenor", "5Y"),
+                    "fixedRate": run.get("fixedRate"),
+                    "floatingIndex": run.get("floatingIndex", "SOFR"),
+                    "pv": run.get("pv", run.get("pv_base_ccy", 0)),
+                    "pv01": run.get("pv01", 0),
+                    "created_at": run.get("created_at", run.get("createdAt", datetime.now().isoformat())),
+                    "completed_at": run.get("completed_at", run.get("completedAt")),
+                    "error": run.get("error")
+                }
+                transformed_runs.append(transformed_run)
+            
+            print(f"✅ Transformed {len(transformed_runs)} runs for frontend")
+            return transformed_runs
         else:
             print("📊 Using fallback runs storage")
             return fallback_runs
