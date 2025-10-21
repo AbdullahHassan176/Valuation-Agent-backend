@@ -454,6 +454,9 @@ async def get_runs():
     """Get all valuation runs."""
     global db_initialized
     try:
+        print(f"🔍 get_runs called - db_initialized: {db_initialized}, mongodb_client: {mongodb_client is not None}")
+        print(f"🔍 fallback_runs count: {len(fallback_runs)}")
+        
         if db_initialized and mongodb_client:
             print("📊 Fetching runs from MongoDB...")
             runs = await mongodb_client.get_runs()
@@ -764,18 +767,21 @@ async def create_run(request: dict):
                 else:
                     print("⚠️ Failed to store in MongoDB, using fallback")
                     fallback_runs.append(new_run)
+                    print(f"✅ Run added to fallback storage: {new_run['id']}")
             except Exception as e:
                 print(f"❌ Error storing in MongoDB: {e}")
                 print("⚠️ Using fallback storage")
                 fallback_runs.append(new_run)
+                print(f"✅ Run added to fallback storage: {new_run['id']}")
         else:
             print("💾 Storing run in fallback storage...")
             fallback_runs.append(new_run)
-        
-        # Always add to fallback storage as backup
-        if new_run not in fallback_runs:
-            fallback_runs.append(new_run)
             print(f"✅ Run added to fallback storage: {new_run['id']}")
+        
+        # Always ensure run is in fallback storage as backup
+        if not any(run.get("id") == new_run.get("id") for run in fallback_runs):
+            fallback_runs.append(new_run)
+            print(f"✅ Run added to fallback storage as backup: {new_run['id']}")
         
         print(f"✅ Run creation completed successfully: {new_run['id']}")
         
