@@ -158,6 +158,39 @@ I can help you with:
 
 What would you like to know about your valuation data?"""
 
+    # Create new valuation run
+    elif any(word in user_message for word in ["create", "new", "irs", "swap", "valuation run"]):
+        return """Creating a New IRS Valuation Run - Audit Guidance:
+
+IRS Valuation Process:
+1. Instrument Specification:
+   • Notional amount and currency
+   • Fixed rate and floating rate index
+   • Effective and maturity dates
+   • Payment frequency and day count convention
+
+2. Market Data Requirements:
+   • Yield curve for discounting
+   • Forward rate curve for floating leg
+   • Credit spreads for CVA calculation
+   • FX rates for cross-currency swaps
+
+3. Valuation Methodology:
+   • Present value calculation using yield curves
+   • Risk metrics (duration, convexity, DV01)
+   • Sensitivity analysis (parallel shifts, curve twists)
+   • XVA adjustments (CVA, DVA, FVA)
+
+4. Audit Considerations:
+   • Verify market data sources and timestamps
+   • Test valuation model accuracy
+   • Review risk calculation methodology
+   • Ensure regulatory compliance
+
+To create a new run, go to the main page and click 'Create New Run'. I can help you with the analysis once you have the valuation results.
+
+What specific aspect of IRS valuation would you like me to help you with?"""
+
     # Runs analysis
     elif any(word in user_message for word in ["runs", "valuation", "latest", "show me"]):
         if runs:
@@ -238,7 +271,7 @@ Common Issues to Watch:
 What specific aspect of IFRS 13 compliance would you like me to help you audit?"""
 
     # Help and capabilities
-    elif any(word in user_message for word in ["help", "what can you do", "capabilities"]):
+    elif any(word in user_message for word in ["help", "what can you do", "capabilities", "what cna you do"]):
         return f"""AI Valuation Auditor Capabilities:
 
 Data Analysis:
@@ -251,6 +284,7 @@ Audit Expertise:
 • Financial instrument valuations (IRS, CCS, Bonds)
 • Risk management and regulatory compliance
 • Audit procedures and documentation
+• XVA calculations (CVA, DVA, FVA, KVA, MVA)
 
 What I Can Help With:
 • Valuation methodology review
@@ -258,12 +292,80 @@ What I Can Help With:
 • Compliance verification
 • Documentation audit
 • Sensitivity testing guidance
+• XVA and credit risk analysis
 
 Ask me about:
 • Specific valuation runs
 • Yield curve construction
 • IFRS compliance requirements
-• Risk analysis techniques"""
+• Risk analysis techniques
+• CVA, XVA, and credit risk adjustments"""
+
+    # Credit Valuation Adjustment (CVA)
+    elif any(word in user_message for word in ["cva", "credit valuation adjustment", "credit risk", "counterparty risk"]):
+        return """Credit Valuation Adjustment (CVA) - Audit Focus:
+
+CVA Definition:
+CVA is the difference between the risk-free portfolio value and the true portfolio value that takes into account the possibility of counterparty default.
+
+Key CVA Components:
+• Probability of Default (PD) - likelihood of counterparty default
+• Loss Given Default (LGD) - percentage loss if default occurs
+• Exposure at Default (EAD) - exposure amount at time of default
+• Recovery Rate - percentage recovered after default
+
+CVA Calculation Methodology:
+• Monte Carlo simulation for exposure paths
+• Credit spread curves for default probabilities
+• Correlation between credit and market risk factors
+• Wrong-way risk considerations
+
+Audit Procedures for CVA:
+• Verify counterparty credit ratings and spreads
+• Test exposure calculation methodology
+• Review correlation assumptions
+• Validate stress testing scenarios
+• Check regulatory capital calculations
+
+Common CVA Issues:
+• Inadequate credit data quality
+• Poor correlation modeling
+• Insufficient stress testing
+• Regulatory compliance gaps
+
+Would you like me to help you audit specific CVA calculations or methodologies?"""
+
+    # XVA (Cross Valuation Adjustments)
+    elif any(word in user_message for word in ["xva", "fva", "kva", "mva", "valuation adjustment"]):
+        return """XVA (Cross Valuation Adjustments) - Comprehensive Overview:
+
+XVA Components:
+• CVA (Credit Valuation Adjustment) - counterparty credit risk
+• DVA (Debit Valuation Adjustment) - own credit risk
+• FVA (Funding Valuation Adjustment) - funding cost impact
+• KVA (Capital Valuation Adjustment) - regulatory capital cost
+• MVA (Margin Valuation Adjustment) - initial margin cost
+
+XVA Integration:
+• Total XVA = CVA + DVA + FVA + KVA + MVA
+• Netting and collateral considerations
+• Regulatory capital requirements
+• Accounting treatment (IFRS 13)
+
+Audit Focus Areas:
+• Model validation and backtesting
+• Data quality and completeness
+• Regulatory compliance (Basel III, CVA capital)
+• Stress testing and scenario analysis
+• Documentation and governance
+
+Implementation Challenges:
+• Model complexity and computational requirements
+• Data availability and quality
+• Regulatory reporting requirements
+• System integration and controls
+
+Would you like me to help you with specific XVA components or audit procedures?"""
 
     # Default response
     else:
