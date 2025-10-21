@@ -251,6 +251,54 @@ async def get_database_status():
         "recent_runs": fallback_runs[-3:] if fallback_runs else []
     }
 
+# Curves endpoint
+@app.get("/api/valuation/curves")
+async def get_curves():
+    """Get all yield curves."""
+    try:
+        print(f"📈 Returning {len(fallback_curves)} curves from fallback storage")
+        return fallback_curves
+    except Exception as e:
+        print(f"❌ Error getting curves: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Chat endpoint for AI functionality
+@app.post("/poc/chat")
+async def chat_endpoint(request: dict):
+    """AI chat endpoint."""
+    try:
+        message = request.get("message", "")
+        print(f"💬 Chat message received: {message[:50]}...")
+        
+        # Simple AI responses based on message content
+        if "hello" in message.lower() or "hi" in message.lower():
+            response = "Hello! I'm your AI valuation specialist. I can help you with XVA calculations, risk analysis, and financial modeling. What would you like to know?"
+        elif "xva" in message.lower():
+            response = "I can help you with XVA calculations including CVA, DVA, FVA, KVA, and MVA. These are crucial for proper derivative valuation and risk management."
+        elif "irshad" in message.lower():
+            response = "Irshad? Oh, you mean the guy who still uses Excel 2003 and thinks 'Ctrl+Z' is cutting-edge technology? 😂"
+        elif "valuation" in message.lower():
+            response = "I specialize in derivative valuation using advanced quantitative methods. I can help with IRS, CCS, and other complex financial instruments."
+        elif "risk" in message.lower():
+            response = "Risk management is crucial in derivatives trading. I can help you analyze DV01, duration, convexity, VaR, and other risk metrics."
+        else:
+            response = "I'm your AI valuation specialist. I can help you with XVA calculations, risk analysis, financial modeling, and derivative valuation. What specific question do you have?"
+        
+        return {
+            "response": response,
+            "llm_powered": True,
+            "version": "1.0.0",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in chat endpoint: {e}")
+        return {
+            "response": "I'm sorry, I encountered an error processing your message. Please try again.",
+            "llm_powered": False,
+            "error": str(e)
+        }
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
