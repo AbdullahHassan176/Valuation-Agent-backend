@@ -452,7 +452,7 @@ async def health():
 @app.get("/api/valuation/runs")
 async def get_runs():
     """Get all valuation runs."""
-    global db_initialized
+    global db_initialized, fallback_runs
     try:
         print(f"🔍 get_runs called - db_initialized: {db_initialized}, mongodb_client: {mongodb_client is not None}")
         print(f"🔍 fallback_runs count: {len(fallback_runs)}")
@@ -602,6 +602,7 @@ async def get_archived_runs():
 @app.post("/api/valuation/runs")
 async def create_run(request: dict):
     """Create a new valuation run with actual calculations."""
+    global fallback_runs
     try:
         print(f"🔍 Starting run creation with request: {request}")
         spec = request.get("spec", {})
