@@ -1034,6 +1034,18 @@ async def chat_get():
         "features": "Intelligent responses, runs analysis, curves info, health checks"
     }
 
+@app.get("/api/test/groq-config")
+async def test_groq_config():
+    """Test Groq LLM configuration and availability."""
+    return {
+        "groq_configured": bool(GROQ_API_KEY),
+        "groq_base_url": GROQ_BASE_URL,
+        "groq_model": GROQ_MODEL,
+        "use_groq": USE_GROQ,
+        "api_key_present": bool(GROQ_API_KEY),
+        "api_key_preview": f"{GROQ_API_KEY[:8]}..." if GROQ_API_KEY else "Not set"
+    }
+
 @app.get("/api/test/chat")
 async def test_chat():
     """Test endpoint to verify chat functionality is working."""
